@@ -1,0 +1,39 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/user_service_db
+    username: postgres
+    password: password
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+    show-sql: true
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+
+      discovery:
+        prefer-ip-address: true
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+file:
+  upload-dir: services/user-service/uploads/profile-pictures/
