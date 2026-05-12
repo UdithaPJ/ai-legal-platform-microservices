@@ -14,9 +14,13 @@ spring:
         prefer-ip-address: true
 
     gateway:
-      discovery:
-        locator:
-          enabled: true
+      server:
+        webflux:
+          routes:
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/users,/users/**
 
 management:
   endpoints:
