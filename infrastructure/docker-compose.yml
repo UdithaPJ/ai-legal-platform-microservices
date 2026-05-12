@@ -14,6 +14,18 @@ services:
     volumes:
       - keycloak_postgres_data:/var/lib/postgresql/data
 
+  postgres-lawyer:
+    image: postgres:16
+    container_name: postgres-lawyer
+    environment:
+      POSTGRES_DB: lawyerdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - lawyer_postgres_data:/var/lib/postgresql/data
+
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: keycloak
@@ -49,3 +61,4 @@ services:
 
 volumes:
   keycloak_postgres_data:
+  lawyer_postgres_data:
