@@ -2,29 +2,20 @@ version: '3.9'
 
 services:
 
-  postgres-keycloak:
+  postgres:
     image: postgres:16
-    container_name: postgres-keycloak
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5433:5432"
-    volumes:
-      - keycloak_postgres_data:/var/lib/postgresql/data
+    container_name: postgres
 
-  postgres-lawyer:
-    image: postgres:16
-    container_name: postgres-lawyer
     environment:
-      POSTGRES_DB: lawyerdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+
     ports:
-      - "5434:5432"
+      - "5432:5432"
+
     volumes:
-      - lawyer_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
@@ -36,8 +27,8 @@ services:
 
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
-      KC_DB_USERNAME: keycloak
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: password
 
       KEYCLOAK_ADMIN: admin
@@ -50,7 +41,7 @@ services:
       - ./keycloak/realms:/opt/keycloak/data/import
 
     depends_on:
-      - postgres-keycloak
+      - postgres
 
   consul:
     image: hashicorp/consul:1.17
@@ -60,5 +51,4 @@ services:
     command: "agent -dev -client=0.0.0.0"
 
 volumes:
-  keycloak_postgres_data:
-  lawyer_postgres_data:
+  postgres_data:
