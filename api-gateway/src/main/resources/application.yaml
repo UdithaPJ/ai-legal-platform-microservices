@@ -22,6 +22,11 @@ spring:
               predicates:
                 - Path=/users,/users/**
 
+            - id: messaging-service
+              uri: lb://messaging-service
+              predicates:
+                - Path=/messages,/messages/**
+
 management:
   endpoints:
     web:
