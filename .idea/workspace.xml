@@ -5,14 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ae19c3d3-b900-4f7f-96a4-12e3f0b996b8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/dto/LawyerUpdateRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/dto/LawyerRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/dto/LawyerRequestDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/dto/LawyerResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/dto/LawyerResponseDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/model/Lawyer.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/model/Lawyer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infrastructure/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infrastructure/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/controller/LawyerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/controller/LawyerController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/repository/LawyerRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/repository/LawyerRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/resources/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/service/LawyerService.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/lawyer-profile-service/src/main/java/com/project/lawyerprofileservice/service/LawyerService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,9 +42,9 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "Spring Boot.ApiGatewayApplication.executor": "Debug",
-    "Spring Boot.LawyerProfileServiceApplication.executor": "Debug",
-    "Spring Boot.UserServiceApplication.executor": "Debug",
+    "Spring Boot.ApiGatewayApplication.executor": "Run",
+    "Spring Boot.LawyerProfileServiceApplication.executor": "Run",
+    "Spring Boot.UserServiceApplication.executor": "Run",
     "dart.analysis.tool.window.visible": "false",
     "git-widget-placeholder": "maven-error-fix",
     "kotlin-language-version-configured": "true",
@@ -54,7 +54,7 @@
     "project.structure.side.proportion": "0.0"
   }
 }]]></component>
-  <component name="RunManager" selected="Spring Boot.LawyerProfileServiceApplication">
+  <component name="RunManager" selected="Spring Boot.UserServiceApplication">
     <configuration name="ApiGatewayApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UnknownPolicyInFreeMode" />
       <module name="api-gateway" />
@@ -104,9 +104,9 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Spring Boot.LawyerProfileServiceApplication" />
-        <item itemvalue="Spring Boot.ApiGatewayApplication" />
         <item itemvalue="Spring Boot.UserServiceApplication" />
+        <item itemvalue="Spring Boot.ApiGatewayApplication" />
+        <item itemvalue="Spring Boot.LawyerProfileServiceApplication" />
       </list>
     </recent_temporary>
   </component>

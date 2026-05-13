@@ -2,6 +2,7 @@ package com.project.lawyerprofileservice.service;
 
 import com.project.lawyerprofileservice.dto.LawyerRequestDTO;
 import com.project.lawyerprofileservice.dto.LawyerResponseDTO;
+import com.project.lawyerprofileservice.dto.LawyerUpdateRequestDTO;
 import com.project.lawyerprofileservice.model.Lawyer;
 import com.project.lawyerprofileservice.model.Specialization;
 import com.project.lawyerprofileservice.repository.LawyerRepository;
@@ -115,7 +116,7 @@ public class LawyerService {
 
     public LawyerResponseDTO updateProfile(
             Long id,
-            LawyerRequestDTO request) {
+            LawyerUpdateRequestDTO request) {
 
         Lawyer lawyer = lawyerRepository.findById(id)
                 .orElseThrow(() ->

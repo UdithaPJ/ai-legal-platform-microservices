@@ -2,6 +2,7 @@ package com.project.lawyerprofileservice.controller;
 
 import com.project.lawyerprofileservice.dto.LawyerRequestDTO;
 import com.project.lawyerprofileservice.dto.LawyerResponseDTO;
+import com.project.lawyerprofileservice.dto.LawyerUpdateRequestDTO;
 import com.project.lawyerprofileservice.service.LawyerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +62,7 @@ public class LawyerController {
     @PutMapping("/{id}")
     public ResponseEntity<LawyerResponseDTO> updateProfile(
             @PathVariable Long id,
-            @Valid @RequestBody LawyerRequestDTO request) {
+            @Valid @RequestBody LawyerUpdateRequestDTO request) {
         return ResponseEntity.ok(lawyerService.updateProfile(id, request));
     }
 

@@ -22,7 +22,7 @@ services:
       - --import-realm
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5433/keycloak
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin

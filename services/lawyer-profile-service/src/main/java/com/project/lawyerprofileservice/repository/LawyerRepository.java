@@ -24,5 +24,5 @@ public interface LawyerRepository extends JpaRepository<Lawyer, Long> {
 
     boolean existsByBarRegistrationNumber(String barRegistrationNumber);
 
-    boolean existsByUserId(@NotNull(message = "User ID is required") UUID userId);
+    boolean existsByUserId(UUID userId);
 }
