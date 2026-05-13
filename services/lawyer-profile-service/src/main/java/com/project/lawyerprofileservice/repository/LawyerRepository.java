@@ -15,21 +15,12 @@ import java.util.UUID;
 @Repository
 public interface LawyerRepository extends JpaRepository<Lawyer, Long> {
 
-    Optional<Lawyer> findByEmail(String email);
-
     Optional<Lawyer> findByUserId(UUID userId);
 
     List<Lawyer> findByIsAvailableTrue();
 
     @Query("SELECT DISTINCT l FROM Lawyer l JOIN l.specializations s WHERE s = :specialization")
     List<Lawyer> findBySpecialization(@Param("specialization") Specialization specialization);
-
-    @Query("SELECT l FROM Lawyer l WHERE " +
-            "LOWER(l.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(l.location) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<Lawyer> searchByKeyword(@Param("keyword") String keyword);
-
-    boolean existsByEmail(String email);
 
     boolean existsByBarRegistrationNumber(String barRegistrationNumber);
 

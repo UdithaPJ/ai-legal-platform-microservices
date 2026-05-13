@@ -4,6 +4,7 @@ import com.project.lawyerprofileservice.model.Specialization;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,7 +32,7 @@ public class LawyerRequestDTO {
             inclusive = false,
             message = "Consultation fee must be positive"
     )
-    private Double consultationFee;
+    private BigDecimal consultationFee;
 
     private String location;
 

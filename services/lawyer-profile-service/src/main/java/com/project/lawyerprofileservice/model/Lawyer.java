@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -43,8 +44,8 @@ public class Lawyer {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
-    @Column(nullable = false)
-    private Double consultationFee;
+    @Column(name = "consultation_fee", nullable = false, precision = 10, scale = 2)
+    private BigDecimal consultationFee;
 
     private String location;
 
