@@ -26,6 +26,10 @@ public class MessageService {
             String content
     ) {
 
+        if (!senderId.equals(clientId) && !senderId.equals(lawyerId)) {
+            throw new RuntimeException("Unauthorized: sender not part of conversation");
+        }
+
         // 1. Find or create conversation
         Conversation conversation = conversationRepository
                 .findByClientIdAndLawyerIdAndAppointmentId(clientId, lawyerId, appointmentId)
@@ -56,5 +60,9 @@ public class MessageService {
 
     public List<Message> getMessages(UUID conversationId) {
         return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+    }
+
+    public List<Conversation> getUserConversations(String userId) {
+        return conversationRepository.findConversationsByUser(userId);
     }
 }

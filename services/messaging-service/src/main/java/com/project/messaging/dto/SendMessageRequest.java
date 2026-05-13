@@ -10,6 +10,5 @@ public class SendMessageRequest {
     private String lawyerId;
     private Long appointmentId;
 
-    private String senderId;
     private String content;
 }

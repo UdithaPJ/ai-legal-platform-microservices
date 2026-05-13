@@ -27,6 +27,12 @@ spring:
       discovery:
         prefer-ip-address: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8181/realms/legal-plaform
+
 management:
   endpoints:
     web:
