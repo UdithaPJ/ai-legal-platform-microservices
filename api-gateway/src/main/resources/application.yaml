@@ -27,16 +27,16 @@ spring:
               predicates:
                 - Path=/uploads/**
 
+            - id: messaging-service
+              uri: lb://messaging-service
+              predicates:
+                - Path=/messages,/messages/**
+
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8181/realms/legal-plaform
-
-            - id: messaging-service
-              uri: lb://messaging-service
-              predicates:
-                - Path=/messages,/messages/**
 
 management:
   endpoints:
