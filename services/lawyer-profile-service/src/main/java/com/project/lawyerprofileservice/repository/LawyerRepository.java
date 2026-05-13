@@ -2,6 +2,7 @@ package com.project.lawyerprofileservice.repository;
 
 import com.project.lawyerprofileservice.model.Lawyer;
 import com.project.lawyerprofileservice.model.Specialization;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,13 +10,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface LawyerRepository extends JpaRepository<Lawyer, Long> {
 
     Optional<Lawyer> findByEmail(String email);
 
-    Optional<Lawyer> findByUserId(Long userId);
+    Optional<Lawyer> findByUserId(UUID userId);
 
     List<Lawyer> findByIsAvailableTrue();
 
@@ -31,5 +33,5 @@ public interface LawyerRepository extends JpaRepository<Lawyer, Long> {
 
     boolean existsByBarRegistrationNumber(String barRegistrationNumber);
 
-    boolean existsByUserId(Long userId);
+    boolean existsByUserId(@NotNull(message = "User ID is required") UUID userId);
 }

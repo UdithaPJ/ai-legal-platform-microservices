@@ -5,14 +5,11 @@ services:
   postgres:
     image: postgres:16
     container_name: postgres
-
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-
     ports:
-      - "5432:5432"
-
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d
@@ -20,26 +17,20 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: keycloak
-
     command:
       - start-dev
       - --import-realm
-
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_URL: jdbc:postgresql://postgres:5433/keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: password
-
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-
     ports:
       - "8181:8080"
-
     volumes:
       - ./keycloak/realms:/opt/keycloak/data/import
-
     depends_on:
       - postgres
 

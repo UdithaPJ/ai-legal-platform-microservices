@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/lawyers")
@@ -36,7 +37,7 @@ public class LawyerController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<LawyerResponseDTO> getByUserId(@PathVariable Long userId) {
+    public ResponseEntity<LawyerResponseDTO> getByUserId(@PathVariable UUID userId) {
         return ResponseEntity.ok(lawyerService.getByUserId(userId));
     }
 
@@ -51,11 +52,11 @@ public class LawyerController {
         return ResponseEntity.ok(lawyerService.getAvailableLawyers());
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<LawyerResponseDTO>> search(
-            @RequestParam String keyword) {
-        return ResponseEntity.ok(lawyerService.search(keyword));
-    }
+//    @GetMapping("/search")
+//    public ResponseEntity<List<LawyerResponseDTO>> search(
+//            @RequestParam String keyword) {
+//        return ResponseEntity.ok(lawyerService.search(keyword));
+//    }
 
     @PutMapping("/{id}")
     public ResponseEntity<LawyerResponseDTO> updateProfile(

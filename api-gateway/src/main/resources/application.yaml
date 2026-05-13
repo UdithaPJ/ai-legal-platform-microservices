@@ -21,6 +21,10 @@ spring:
               uri: lb://user-service
               predicates:
                 - Path=/users,/users/**
+            - id: lawyer-service
+              uri: lb://lawyer-service
+              predicates:
+                - Path=/lawyers,/lawyers/**
 
 management:
   endpoints:

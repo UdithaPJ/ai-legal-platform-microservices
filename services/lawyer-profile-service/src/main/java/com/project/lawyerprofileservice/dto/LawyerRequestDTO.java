@@ -5,22 +5,13 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class LawyerRequestDTO {
 
     @NotNull(message = "User ID is required")
-    private Long userId;
-
-    @NotBlank(message = "Full name is required")
-    private String fullName;
-
-    @Email(message = "Invalid email format")
-    @NotBlank(message = "Email is required")
-    private String email;
-
-    @NotBlank(message = "Phone number is required")
-    private String phone;
+    private UUID userId;
 
     @NotBlank(message = "Bar registration number is required")
     private String barRegistrationNumber;
@@ -35,12 +26,14 @@ public class LawyerRequestDTO {
     private String bio;
 
     @NotNull(message = "Consultation fee is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Consultation fee must be positive")
+    @DecimalMin(
+            value = "0.0",
+            inclusive = false,
+            message = "Consultation fee must be positive"
+    )
     private Double consultationFee;
 
     private String location;
-
-    private String profilePhotoUrl;
 
     private Boolean isAvailable;
 }

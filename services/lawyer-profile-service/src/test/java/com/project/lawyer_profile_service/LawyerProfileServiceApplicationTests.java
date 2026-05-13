@@ -1,4 +1,4 @@
-package com.project.lawyer_profile_service;
+package com.project.lawyerprofileservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

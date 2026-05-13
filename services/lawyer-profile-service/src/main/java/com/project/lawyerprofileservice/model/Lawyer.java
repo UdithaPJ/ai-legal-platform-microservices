@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "lawyers")
@@ -22,16 +23,7 @@ public class Lawyer {
     private Long id;
 
     @Column(name = "user_id", nullable = false, unique = true)
-    private Long userId;
-
-    @Column(nullable = false)
-    private String fullName;
-
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(nullable = false)
-    private String phone;
+    private UUID userId;
 
     @Column(nullable = false, unique = true)
     private String barRegistrationNumber;
@@ -56,8 +48,6 @@ public class Lawyer {
 
     private String location;
 
-    private String profilePhotoUrl;
-
     @Column(nullable = false)
     private Boolean isAvailable;
 
@@ -66,16 +56,4 @@ public class Lawyer {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (isAvailable == null) isAvailable = true;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }
