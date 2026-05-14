@@ -5,7 +5,8 @@ import httpx
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import health
+from app.database import Base, engine
+from app.routers import documents, health, knowledge
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,10 @@ def _registration_payload() -> dict:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        from app.models import document  # ensure models are registered
+        await conn.run_sync(Base.metadata.create_all)
+
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.put(
@@ -56,3 +61,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AI Analysis Service", lifespan=lifespan)
 
 app.include_router(health.router)
+app.include_router(documents.router)
+app.include_router(knowledge.router)
+
+if __name__ == "__main__":
+    import uvicorn
+    print(_consul_base())
+    uvicorn.run(
+        "app.main:app",          # same as: uvicorn app.main:app
+        host="0.0.0.0",
+        port=settings.app_port,  # 8083 by default
+        reload=True,
+    )
