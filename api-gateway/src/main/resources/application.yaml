@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8080
 
 spring:
   application:
@@ -25,6 +25,10 @@ spring:
               uri: lb://lawyer-service
               predicates:
                 - Path=/lawyers,/lawyers/**
+            - id: review-rating-service
+              uri: lb://review-rating-service
+              predicates:
+                - Path=/reviews,/reviews/**
 
 management:
   endpoints:
