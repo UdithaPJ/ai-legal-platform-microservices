@@ -28,20 +28,20 @@ spring:
           predicates:
             - Path=/appointments/**
 
-            - id: user-static
-              uri: lb://user-service
-              predicates:
-                - Path=/uploads/**
+        - id: user-static
+          uri: lb://user-service
+          predicates:
+            - Path=/uploads/**
 
-            - id: messaging-service
-              uri: lb://messaging-service
-              predicates:
-                - Path=/messages,/messages/**
+        - id: messaging-service
+          uri: lb://messaging-service
+          predicates:
+            - Path=/messages/**
 
-            - id: messaging-service-ws
-              uri: lb:ws://messaging-service
-              predicates:
-                - Path=/ws-chat,/ws-chat/**
+        - id: messaging-service-ws
+          uri: lb:ws://messaging-service
+          predicates:
+            - Path=/ws-chat/**
 
   security:
     oauth2:
