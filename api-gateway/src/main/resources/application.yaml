@@ -14,17 +14,19 @@ spring:
         prefer-ip-address: true
 
     gateway:
-      server:
-        webflux:
-          routes:
-            - id: user-service
-              uri: lb://user-service
-              predicates:
-                - Path=/users,/users/**
-            - id: lawyer-service
-              uri: lb://lawyer-service
-              predicates:
-                - Path=/lawyers,/lawyers/**
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/users/**
+        - id: lawyer-service
+          uri: lb://lawyer-service
+          predicates:
+            - Path=/lawyers/**
+        - id: appointment-service
+          uri: lb://appointment-service
+          predicates:
+            - Path=/appointments/**
 
 management:
   endpoints:
