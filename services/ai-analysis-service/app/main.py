@@ -58,7 +58,13 @@ async def lifespan(app: FastAPI):
             logger.warning("Consul deregistration failed: %s", exc)
 
 
-app = FastAPI(title="AI Analysis Service", lifespan=lifespan)
+app = FastAPI(
+    title="AI Analysis Service",
+    lifespan=lifespan,
+    docs_url="/analysis/docs",
+    redoc_url="/analysis/redoc",
+    openapi_url="/analysis/openapi.json",
+)
 
 app.include_router(health.router)
 app.include_router(documents.router)
@@ -70,6 +76,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",          # same as: uvicorn app.main:app
         host="0.0.0.0",
-        port=settings.app_port,  # 8083 by default
+        port=settings.app_port,  # 8087 by default
         reload=True,
     )

@@ -43,16 +43,61 @@ spring:
           predicates:
             - Path=/ws-chat/**
 
+        - id: ai-analysis-service
+          uri: lb://ai-analysis-service
+          predicates:
+            - Path=/analysis/**
+
+        # --- OpenAPI docs passthrough for Swagger UI aggregation ---
+        - id: user-service-api-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/v3/api-docs/user-service
+          filters:
+            - RewritePath=/v3/api-docs/user-service, /v3/api-docs
+
+        - id: appointment-service-api-docs
+          uri: lb://appointment-service
+          predicates:
+            - Path=/v3/api-docs/appointment-service
+          filters:
+            - RewritePath=/v3/api-docs/appointment-service, /v3/api-docs
+
+        - id: messaging-service-api-docs
+          uri: lb://messaging-service
+          predicates:
+            - Path=/v3/api-docs/messaging-service
+          filters:
+            - RewritePath=/v3/api-docs/messaging-service, /v3/api-docs
+
+        - id: lawyer-service-api-docs
+          uri: lb://lawyer-service
+          predicates:
+            - Path=/v3/api-docs/lawyer-service
+          filters:
+            - RewritePath=/v3/api-docs/lawyer-service, /v3/api-docs
+
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8181/realms/legal-plaform
 
-            - id: ai-analysis-service
-              uri: lb://ai-analysis-service
-              predicates:
-                - Path=/analysis,/analysis/**
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    urls:
+      - name: user-service
+        url: /v3/api-docs/user-service
+      - name: lawyer-service
+        url: /v3/api-docs/lawyer-service
+      - name: appointment-service
+        url: /v3/api-docs/appointment-service
+      - name: messaging-service
+        url: /v3/api-docs/messaging-service
+      - name: ai-analysis-service
+        url: /analysis/openapi.json
 
 management:
   endpoints:

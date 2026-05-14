@@ -1,12 +1,12 @@
 server:
-  port: 8085
+  port: 8084
 
 spring:
   application:
     name: messaging-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/messaging_db
+    url: jdbc:postgresql://localhost:5433/messaging_db
     username: postgres
     password: password
 

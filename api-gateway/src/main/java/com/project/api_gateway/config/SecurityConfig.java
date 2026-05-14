@@ -28,6 +28,17 @@ public class SecurityConfig {
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/uploads/**").permitAll()
 
+                        // Swagger / OpenAPI (gateway aggregated docs)
+                        .pathMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/analysis/openapi.json",
+                                "/analysis/docs",
+                                "/analysis/docs/**",
+                                "/analysis/redoc"
+                        ).permitAll()
+
                         // WebSocket handshake (JWT is validated at STOMP CONNECT in messaging-service)
                         .pathMatchers("/ws-chat/**").permitAll()
                         .pathMatchers("/ws-chat").permitAll()
