@@ -49,6 +49,11 @@ spring:
         jwt:
           issuer-uri: http://localhost:8181/realms/legal-plaform
 
+            - id: ai-analysis-service
+              uri: lb://ai-analysis-service
+              predicates:
+                - Path=/analysis,/analysis/**
+
 management:
   endpoints:
     web:
