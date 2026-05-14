@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -51,7 +52,7 @@ public class Appointment {
     // Consultation fee snapshot at booking time
     // (fee may change later; we store what was agreed at booking)
     @Column(nullable = false)
-    private Double consultationFee;
+    private BigDecimal consultationFee;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

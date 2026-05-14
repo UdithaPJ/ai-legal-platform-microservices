@@ -4,6 +4,7 @@ import com.project.appointmentservice.model.AppointmentStatus;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -18,7 +19,7 @@ public class AppointmentResponseDTO {
     private String description;
     private AppointmentStatus status;
     private String lawyerNote;
-    private Double consultationFee;
+    private BigDecimal consultationFee;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

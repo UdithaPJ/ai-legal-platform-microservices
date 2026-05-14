@@ -1,13 +1,13 @@
 package com.project.appointmentservice.dto;
 
 import lombok.Data;
+import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 public class LawyerResponseDTO {
     private Long id;
-    private Long userId;
-    private String fullName;
-    private String email;
+    private UUID userId;
     private Boolean isAvailable;
-    private Double consultationFee;
+    private BigDecimal consultationFee;
 }
