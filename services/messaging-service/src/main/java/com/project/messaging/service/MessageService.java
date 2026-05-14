@@ -65,4 +65,32 @@ public class MessageService {
     public List<Conversation> getUserConversations(String userId) {
         return conversationRepository.findConversationsByUser(userId);
     }
+
+    public Message sendMessageToConversation(
+            UUID conversationId,
+            String senderId,
+            String content
+    ) {
+
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        // SECURITY CHECK
+        if (!senderId.equals(conversation.getClientId()) &&
+                !senderId.equals(conversation.getLawyerId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        Message message = Message.builder()
+                .id(UUID.randomUUID())
+                .conversationId(conversationId)
+                .senderId(senderId)
+                .content(content)
+                .messageType("TEXT")
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return messageRepository.save(message);
+    }
 }

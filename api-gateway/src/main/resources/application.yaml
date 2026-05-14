@@ -32,6 +32,11 @@ spring:
               predicates:
                 - Path=/messages,/messages/**
 
+            - id: messaging-service-ws
+              uri: lb:ws://messaging-service
+              predicates:
+                - Path=/ws-chat,/ws-chat/**
+
   security:
     oauth2:
       resourceserver:

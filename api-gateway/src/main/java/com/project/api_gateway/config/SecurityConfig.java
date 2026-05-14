@@ -28,6 +28,10 @@ public class SecurityConfig {
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/uploads/**").permitAll()
 
+                        // WebSocket handshake (JWT is validated at STOMP CONNECT in messaging-service)
+                        .pathMatchers("/ws-chat/**").permitAll()
+                        .pathMatchers("/ws-chat").permitAll()
+
                         // Admin-only actions (example)
                         .pathMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
 
