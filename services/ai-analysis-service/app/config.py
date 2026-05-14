@@ -13,11 +13,11 @@ def _local_ip() -> str:
 
 class Settings(BaseSettings):
     app_name: str = "ai-analysis-service"
-    app_port: int = 8083
+    app_port: int = 8087
     service_host: str = _local_ip()
     consul_host: str = "localhost"
     consul_port: int = 8500
-    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/ai_analysis_db"
+    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5433/ai_analysis_db"
     upload_dir: str = "services/ai-analysis-service/uploads"
 
     ollama_base_url: str = "http://localhost:11434"
