@@ -18,15 +18,15 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/users,/users/**
+            - Path=/users/**
         - id: lawyer-service
           uri: lb://lawyer-service
           predicates:
-            - Path=/lawyers,/lawyers/**
+            - Path=/lawyers/**
         - id: appointment-service
           uri: lb://appointment-service
           predicates:
-            - Path=/appointment,/appointment/**
+            - Path=/appointments/**
 
 management:
   endpoints:
