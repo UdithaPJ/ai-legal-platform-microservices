@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     service_host: str = _local_ip()
     consul_host: str = "localhost"
     consul_port: int = 8500
+    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/ai_analysis_db"
+    upload_dir: str = "services/ai-analysis-service/uploads"
+
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_embed_model: str = "nomic-embed-text"
+    ollama_gen_model: str = "phi3:mini"
+
+    retrieval_top_k: int = 5
+    chunk_size: int = 512
+    chunk_overlap: int = 50
 
     model_config = {"env_file": ".env"}
 
