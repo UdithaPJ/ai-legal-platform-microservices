@@ -33,7 +33,7 @@ spring:
         register: true
         instance-id: ${spring.application.name}-${server.port}
         health-check-path: /actuator/health
-        health-check-interval: 10s
+        health-check-interval: 30s
         prefer-ip-address: true
 
 feign:
