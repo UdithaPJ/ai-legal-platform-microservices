@@ -5,11 +5,9 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/services/user-service/pom.xml" />
-        <option value="$PROJECT_DIR$/services/appointment-service/pom.xml" />
         <option value="$PROJECT_DIR$/services/lawyer-profile-service/pom.xml" />
         <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
-        <option value="$PROJECT_DIR$/discovery-server/pom.xml" />
-        <option value="$PROJECT_DIR$/services/messaging-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/review-rating-service/pom.xml" />
       </list>
     </option>
   </component>

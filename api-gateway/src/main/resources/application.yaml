@@ -51,7 +51,12 @@ spring:
         - id: video-session-service
           uri: lb://video-session-service
           predicates:
-            - Path=/video-sessions,/video-sessions/**
+            - Path=/video-sessions/**
+
+        - id: review-rating-service
+          uri: lb://review-rating-service
+          predicates:
+            - Path=/reviews/**
 
         # --- OpenAPI docs passthrough for Swagger UI aggregation ---
         - id: user-service-api-docs
@@ -88,6 +93,14 @@ spring:
             - Path=/v3/api-docs/video-session-service
           filters:
             - RewritePath=/v3/api-docs/video-session-service, /v3/api-docs
+
+        - id: review-rating-service-api-docs
+          uri: lb://review-rating-service
+          predicates:
+            - Path=/v3/api-docs/review-rating-service
+          filters:
+            - RewritePath=/v3/api-docs/review-rating-service, /v3/api-docs
+
   security:
     oauth2:
       resourceserver:
@@ -109,6 +122,10 @@ springdoc:
         url: /v3/api-docs/messaging-service
       - name: ai-analysis-service
         url: /analysis/openapi.json
+      - name: video-session-service
+        url: /v3/api-docs/video-sessions-service
+      - name: review-rating-service
+        url: /v3/api-docs/review-rating-service
 
 management:
   endpoints:
