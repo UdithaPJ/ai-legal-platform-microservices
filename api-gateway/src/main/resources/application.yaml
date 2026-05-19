@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   application:
@@ -48,6 +48,11 @@ spring:
           predicates:
             - Path=/analysis/**
 
+        - id: video-session-service
+          uri: lb://video-session-service
+          predicates:
+            - Path=/video-sessions,/video-sessions/**
+
         # --- OpenAPI docs passthrough for Swagger UI aggregation ---
         - id: user-service-api-docs
           uri: lb://user-service
@@ -77,6 +82,12 @@ spring:
           filters:
             - RewritePath=/v3/api-docs/lawyer-service, /v3/api-docs
 
+        - id: video-session-service-api-docs
+          uri: lb://video-session-service
+          predicates:
+            - Path=/v3/api-docs/video-session-service
+          filters:
+            - RewritePath=/v3/api-docs/video-session-service, /v3/api-docs
   security:
     oauth2:
       resourceserver:

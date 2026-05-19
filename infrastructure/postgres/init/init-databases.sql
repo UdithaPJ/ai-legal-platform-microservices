@@ -4,6 +4,7 @@ CREATE DATABASE lawyerdb;
 CREATE DATABASE appointmentdb;
 CREATE DATABASE messaging_db;
 CREATE DATABASE ai_analysis_db;
+CREATE DATABASE video_session_db;
 
 \connect ai_analysis_db
 CREATE EXTENSION IF NOT EXISTS vector;
