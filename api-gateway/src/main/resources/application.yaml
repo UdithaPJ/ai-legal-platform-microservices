@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8080
 
 spring:
   application:
@@ -51,7 +51,7 @@ spring:
         - id: video-session-service
           uri: lb://video-session-service
           predicates:
-            - Path=/video-sessions/**
+            - Path=/video-session/**
 
         - id: review-rating-service
           uri: lb://review-rating-service
@@ -123,7 +123,7 @@ springdoc:
       - name: ai-analysis-service
         url: /analysis/openapi.json
       - name: video-session-service
-        url: /v3/api-docs/video-sessions-service
+        url: /v3/api-docs/video-session-service
       - name: review-rating-service
         url: /v3/api-docs/review-rating-service
 
