@@ -25,6 +25,10 @@ spring:
               uri: lb://lawyer-service
               predicates:
                 - Path=/lawyers,/lawyers/**
+            - id: video-session-service
+              uri: lb://video-session-service
+              predicates:
+                - Path=/video-sessions,/video-sessions/**
 
 management:
   endpoints:
