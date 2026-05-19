@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS lawyers (
 
     is_available BOOLEAN NOT NULL DEFAULT TRUE,
 
+    average_rating DECIMAL(2,1) DEFAULT 0.0,
+
+    rating_count INTEGER DEFAULT 0,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
