@@ -36,6 +36,15 @@ spring:
         health-check-interval: 30s
         prefer-ip-address: true
 
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        acks: all
+
 feign:
   client:
     config:
@@ -57,3 +66,12 @@ management:
 logging:
   level:
     com.project: DEBUG
+
+app:
+  kafka:
+    topics:
+      reviewEvents: review.events.v1
+      reviewEventsDlq: review.events.v1.dlq
+  outbox:
+    batchSize: 50
+    publisherDelayMs: 2000

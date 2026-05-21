@@ -1,22 +1,26 @@
 package com.project.appointmentservice.dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Data
 public class AppointmentRequestDTO {
 
     @NotNull(message = "Client ID is required")
-    private Long clientId;
+    private UUID clientId;
 
     @NotNull(message = "Lawyer ID is required")
-    private Long lawyerId;
+    private UUID lawyerId;
 
-    @NotNull(message = "Appointment date and time is required")
-    @Future(message = "Appointment must be scheduled in the future")
-    private LocalDateTime appointmentDateTime;
+    // Optional preferred time. The final time is chosen during scheduling.
+    private OffsetDateTime appointmentDateTime;
 
     @NotNull(message = "Duration is required")
     @Min(value = 30, message = "Minimum duration is 30 minutes")

@@ -10,7 +10,7 @@ import java.util.UUID;
 @Builder
 public class ReviewResponseDTO {
     private Long id;
-    private Long lawyerId;
+    private UUID lawyerId;
     private UUID clientId;
     private String clientName;       // resolved from user-service
     private Long appointmentId;

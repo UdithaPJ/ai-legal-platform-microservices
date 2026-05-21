@@ -177,6 +177,8 @@ public class LawyerService {
                 .consultationFee(lawyer.getConsultationFee())
                 .location(lawyer.getLocation())
                 .isAvailable(lawyer.getIsAvailable())
+                .averageRating(lawyer.getAverageRating())
+                .reviewCount(lawyer.getReviewCount())
                 .createdAt(lawyer.getCreatedAt())
                 .updatedAt(lawyer.getUpdatedAt())
                 .build();

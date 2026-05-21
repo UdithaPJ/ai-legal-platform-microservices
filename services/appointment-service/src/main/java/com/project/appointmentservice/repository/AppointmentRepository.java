@@ -5,30 +5,22 @@ import com.project.appointmentservice.model.AppointmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
-    // All appointments for a client
-    List<Appointment> findByClientId(Long clientId);
-
-    // All appointments for a lawyer
-    List<Appointment> findByLawyerId(Long lawyerId);
-
-    // Filter by client + status (e.g. all PENDING appointments for a client)
-    List<Appointment> findByClientIdAndStatus(Long clientId, AppointmentStatus status);
-
-    // Filter by lawyer + status (e.g. all PENDING requests for a lawyer)
-    List<Appointment> findByLawyerIdAndStatus(Long lawyerId, AppointmentStatus status);
-
-    // Check for scheduling conflicts:
-    // Does the lawyer have any CONFIRMED appointment that overlaps the requested slot?
-    List<Appointment> findByLawyerIdAndStatusAndAppointmentDateTimeBetween(
-            Long lawyerId,
-            AppointmentStatus status,
-            LocalDateTime start,
-            LocalDateTime end
+    List<Appointment> findByClientId(UUID clientId);
+    List<Appointment> findByLawyerId(UUID lawyerId);
+    List<Appointment> findByClientIdAndStatus(UUID clientId, AppointmentStatus status);
+    List<Appointment> findByLawyerIdAndStatus(UUID lawyerId, AppointmentStatus status);
+    List<Appointment> findByLawyerIdAndStatusInAndAppointmentDateTimeBetween(
+            UUID lawyerId,
+            Collection<AppointmentStatus> statuses,
+            OffsetDateTime start,
+            OffsetDateTime end
     );
 }

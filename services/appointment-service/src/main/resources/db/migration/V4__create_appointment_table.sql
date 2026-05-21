@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS appointments (
     id                    BIGSERIAL PRIMARY KEY,
-    client_id             BIGINT NOT NULL,
-    lawyer_id             BIGINT NOT NULL,
-    appointment_date_time TIMESTAMP NOT NULL,
+    client_id             UUID NOT NULL,
+    lawyer_id             UUID NOT NULL,
+    meeting_url TEXT,
     duration_minutes      INTEGER NOT NULL,
     description           TEXT NOT NULL,
     status                VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     lawyer_note           TEXT,
     consultation_fee      NUMERIC(10, 2) NOT NULL,
-    created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );

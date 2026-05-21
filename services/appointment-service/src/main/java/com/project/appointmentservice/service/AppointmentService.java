@@ -1,8 +1,18 @@
 package com.project.appointmentservice.service;
 
+import com.project.appointmentservice.dto.CreateVideoSessionRequestDTO;
 import com.project.appointmentservice.client.LawyerServiceClient;
 import com.project.appointmentservice.client.UserServiceClient;
-import com.project.appointmentservice.dto.*;
+import com.project.appointmentservice.dto.VideoSessionResponseDTO;
+import com.project.appointmentservice.client.VideoSessionServiceClient;
+import com.project.appointmentservice.dto.AppointmentRequestDTO;
+import com.project.appointmentservice.dto.AppointmentResponseDTO;
+import com.project.appointmentservice.dto.AppointmentScheduleRequestDTO;
+import com.project.appointmentservice.dto.AppointmentStatusUpdateDTO;
+import com.project.appointmentservice.dto.LawyerResponseDTO;
+import com.project.appointmentservice.events.WorkflowEvent;
+import com.project.appointmentservice.events.WorkflowEventPublisher;
+import com.project.appointmentservice.events.WorkflowEventType;
 import com.project.appointmentservice.model.Appointment;
 import com.project.appointmentservice.model.AppointmentStatus;
 import com.project.appointmentservice.repository.AppointmentRepository;
@@ -11,7 +21,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,45 +35,24 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final LawyerServiceClient lawyerServiceClient;
     private final UserServiceClient userServiceClient;
-
-    // ── CREATE ──────────────────────────────────────────────────
+    private final VideoSessionServiceClient videoSessionServiceClient;
+    private final WorkflowEventPublisher workflowEventPublisher;
 
     public AppointmentResponseDTO createAppointment(AppointmentRequestDTO request) {
+        LawyerResponseDTO lawyer = fetchLawyerByUserId(request.getLawyerId());
 
-        // 1. Verify lawyer exists via inter-service call to lawyer-service
-        LawyerResponseDTO lawyer = fetchLawyer(request.getLawyerId());
-
-        // 2. Check the lawyer is available
         if (!lawyer.getIsAvailable()) {
             throw new IllegalArgumentException(
                     "Lawyer is currently not available for bookings");
         }
 
-        // 3. Check for scheduling conflicts
-        LocalDateTime requestedEnd = request.getAppointmentDateTime()
-                .plusMinutes(request.getDurationMinutes());
-
-        List<Appointment> conflicts = appointmentRepository
-                .findByLawyerIdAndStatusAndAppointmentDateTimeBetween(
-                        request.getLawyerId(),
-                        AppointmentStatus.CONFIRMED,
-                        request.getAppointmentDateTime().minusHours(3),
-                        requestedEnd
-                );
-
-        if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "The lawyer already has a confirmed appointment in this time slot");
-        }
-
-        // 4. Create the appointment — snapshot the fee at booking time
         Appointment appointment = Appointment.builder()
                 .clientId(request.getClientId())
                 .lawyerId(request.getLawyerId())
                 .appointmentDateTime(request.getAppointmentDateTime())
                 .durationMinutes(request.getDurationMinutes())
                 .description(request.getDescription())
-                .status(AppointmentStatus.PENDING)
+                .status(AppointmentStatus.REQUESTED)
                 .consultationFee(lawyer.getConsultationFee())
                 .build();
 
@@ -70,78 +60,199 @@ public class AppointmentService {
         log.info("Appointment created with id: {} for clientId: {} with lawyerId: {}",
                 saved.getId(), saved.getClientId(), saved.getLawyerId());
 
-        // 5. Fetch lawyer name from user-service via lawyer's userId
-        String lawyerName = fetchLawyerName(lawyer.getUserId());
+        workflowEventPublisher.publish(new WorkflowEvent(
+                WorkflowEventType.APPOINTMENT_REQUESTED,
+                saved.getId(),
+                saved.getClientId().toString(),
+                saved.getLawyerId().toString(),
+                saved.getMeetingUrl(),
+                saved.getAppointmentDateTime(),
+                "New appointment request",
+                OffsetDateTime.now()
+        ));
 
-        return mapToResponse(saved, lawyerName);
+        return mapToResponse(saved, fetchLawyerName(lawyer.getUserId()));
     }
-
-    // ── READ ─────────────────────────────────────────────────────
 
     public AppointmentResponseDTO getById(Long id) {
         Appointment appointment = findById(id);
-        LawyerResponseDTO lawyer = fetchLawyer(appointment.getLawyerId());
-        String lawyerName = fetchLawyerName(lawyer.getUserId());
-        return mapToResponse(appointment, lawyerName);
+        return mapToResponse(appointment, fetchLawyerName(appointment.getLawyerId()));
     }
 
-    public List<AppointmentResponseDTO> getByClientId(Long clientId) {
+    public List<AppointmentResponseDTO> getByClientId(UUID clientId) {
         return appointmentRepository.findByClientId(clientId)
                 .stream()
-                .map(a -> mapToResponse(a, resolveLawyerName(a.getLawyerId())))
+                .map(a -> mapToResponse(a, fetchLawyerName(a.getLawyerId())))
                 .collect(Collectors.toList());
     }
 
-    public List<AppointmentResponseDTO> getByLawyerId(Long lawyerId) {
+    public List<AppointmentResponseDTO> getByLawyerId(UUID lawyerId) {
         return appointmentRepository.findByLawyerId(lawyerId)
                 .stream()
-                .map(a -> mapToResponse(a, resolveLawyerName(a.getLawyerId())))
+                .map(a -> mapToResponse(a, fetchLawyerName(a.getLawyerId())))
                 .collect(Collectors.toList());
     }
 
     public List<AppointmentResponseDTO> getByClientIdAndStatus(
-            Long clientId, AppointmentStatus status) {
+            UUID clientId, AppointmentStatus status) {
         return appointmentRepository.findByClientIdAndStatus(clientId, status)
                 .stream()
-                .map(a -> mapToResponse(a, resolveLawyerName(a.getLawyerId())))
+                .map(a -> mapToResponse(a, fetchLawyerName(a.getLawyerId())))
                 .collect(Collectors.toList());
     }
 
     public List<AppointmentResponseDTO> getByLawyerIdAndStatus(
-            Long lawyerId, AppointmentStatus status) {
+            UUID lawyerId, AppointmentStatus status) {
         return appointmentRepository.findByLawyerIdAndStatus(lawyerId, status)
                 .stream()
-                .map(a -> mapToResponse(a, resolveLawyerName(a.getLawyerId())))
+                .map(a -> mapToResponse(a, fetchLawyerName(a.getLawyerId())))
                 .collect(Collectors.toList());
     }
 
     public List<AppointmentResponseDTO> getAll() {
         return appointmentRepository.findAll()
                 .stream()
-                .map(a -> mapToResponse(a, resolveLawyerName(a.getLawyerId())))
+                .map(a -> mapToResponse(a, fetchLawyerName(a.getLawyerId())))
                 .collect(Collectors.toList());
     }
 
-    // ── STATUS UPDATES ───────────────────────────────────────────
-
-    public AppointmentResponseDTO updateStatus(
-            Long id, AppointmentStatusUpdateDTO request) {
-
+    public AppointmentResponseDTO updateStatus(Long id, AppointmentStatusUpdateDTO request) {
         Appointment appointment = findById(id);
-        validateStatusTransition(appointment.getStatus(), request.getStatus());
+        AppointmentStatus nextStatus = request.getStatus();
 
-        appointment.setStatus(request.getStatus());
+        validateStatusTransition(appointment.getStatus(), nextStatus);
+
+        appointment.setStatus(nextStatus);
         if (request.getLawyerNote() != null) {
             appointment.setLawyerNote(request.getLawyerNote());
         }
 
         Appointment updated = appointmentRepository.save(appointment);
-        log.info("Appointment {} status updated to {}", id, request.getStatus());
+        log.info("Appointment {} status updated to {}", id, nextStatus);
 
-        return mapToResponse(updated, resolveLawyerName(updated.getLawyerId()));
+        publishLifecycleEvent(updated, nextStatus);
+
+        return mapToResponse(updated, fetchLawyerName(updated.getLawyerId()));
     }
 
-    public AppointmentResponseDTO cancelAppointment(Long id, Long clientId) {
+    public AppointmentResponseDTO requestVideoCall(Long id) {
+        Appointment appointment = findById(id);
+
+        if (appointment.getStatus() != AppointmentStatus.ACCEPTED) {
+            throw new IllegalArgumentException(
+                    "Video can only be requested after the appointment is accepted");
+        }
+
+        appointment.setStatus(AppointmentStatus.VIDEO_REQUESTED);
+        Appointment updated = appointmentRepository.save(appointment);
+
+        workflowEventPublisher.publish(new WorkflowEvent(
+                WorkflowEventType.VIDEO_REQUESTED,
+                updated.getId(),
+                updated.getClientId().toString(),
+                updated.getLawyerId().toString(),
+                updated.getMeetingUrl(),
+                updated.getAppointmentDateTime(),
+                "Video consultation requested",
+                OffsetDateTime.now()
+        ));
+
+        return mapToResponse(updated, fetchLawyerName(updated.getLawyerId()));
+    }
+
+    public AppointmentResponseDTO scheduleAppointment(
+            Long id, AppointmentScheduleRequestDTO request) {
+        Appointment appointment = findById(id);
+
+        if (appointment.getStatus() != AppointmentStatus.VIDEO_REQUESTED) {
+            throw new IllegalArgumentException(
+                    "Only video-requested appointments can be scheduled");
+        }
+
+        OffsetDateTime scheduledStart = request.getAppointmentDateTime();
+        OffsetDateTime scheduledEnd = scheduledStart.plusMinutes(appointment.getDurationMinutes());
+
+        List<Appointment> conflicts = appointmentRepository
+                .findByLawyerIdAndStatusInAndAppointmentDateTimeBetween(
+                        appointment.getLawyerId(),
+                        EnumSet.of(AppointmentStatus.SCHEDULED),
+                        scheduledStart.minusHours(3),
+                        scheduledEnd
+                )
+                .stream()
+                .filter(existing -> !existing.getId().equals(appointment.getId()))
+                .collect(Collectors.toList());
+
+        if (!conflicts.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The lawyer already has a scheduled appointment in this time slot");
+        }
+
+        appointment.setAppointmentDateTime(scheduledStart);
+        appointment.setStatus(AppointmentStatus.SCHEDULED);
+
+        Appointment scheduled = appointmentRepository.save(appointment);
+
+        VideoSessionResponseDTO session;
+        try {
+            session = videoSessionServiceClient.createSession(
+                    scheduled.getId(),
+                    new CreateVideoSessionRequestDTO(scheduledStart)
+            );
+        } catch (FeignException e) {
+            throw new IllegalStateException(
+                    "Could not create the meeting link. Please try scheduling again.");
+        }
+
+        if (session != null) {
+            scheduled.setMeetingUrl(session.getMeetingUrl());
+            scheduled = appointmentRepository.save(scheduled);
+        }
+
+        workflowEventPublisher.publish(new WorkflowEvent(
+                WorkflowEventType.APPOINTMENT_SCHEDULED,
+                scheduled.getId(),
+                scheduled.getClientId().toString(),
+                scheduled.getLawyerId().toString(),
+                scheduled.getMeetingUrl(),
+                scheduled.getAppointmentDateTime(),
+                "Appointment scheduled",
+                OffsetDateTime.now()
+        ));
+
+        return mapToResponse(scheduled, fetchLawyerName(scheduled.getLawyerId()));
+    }
+
+    public AppointmentResponseDTO completeAppointment(Long id) {
+        Appointment appointment = findById(id);
+
+        if (!EnumSet.of(
+                AppointmentStatus.ACCEPTED,
+                AppointmentStatus.VIDEO_REQUESTED,
+                AppointmentStatus.SCHEDULED
+        ).contains(appointment.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Only accepted, video-requested, or scheduled appointments can be marked as completed");
+        }
+
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+        Appointment updated = appointmentRepository.save(appointment);
+
+        workflowEventPublisher.publish(new WorkflowEvent(
+                WorkflowEventType.APPOINTMENT_COMPLETED,
+                updated.getId(),
+                updated.getClientId().toString(),
+                updated.getLawyerId().toString(),
+                updated.getMeetingUrl(),
+                updated.getAppointmentDateTime(),
+                "Appointment completed",
+                OffsetDateTime.now()
+        ));
+
+        return mapToResponse(updated, fetchLawyerName(updated.getLawyerId()));
+    }
+
+    public AppointmentResponseDTO cancelAppointment(Long id, UUID clientId) {
         Appointment appointment = findById(id);
 
         if (!appointment.getClientId().equals(clientId)) {
@@ -160,10 +271,8 @@ public class AppointmentService {
         appointment.setStatus(AppointmentStatus.CANCELLED);
         Appointment updated = appointmentRepository.save(appointment);
 
-        return mapToResponse(updated, resolveLawyerName(updated.getLawyerId()));
+        return mapToResponse(updated, fetchLawyerName(updated.getLawyerId()));
     }
-
-    // ── HELPERS ──────────────────────────────────────────────────
 
     private Appointment findById(Long id) {
         return appointmentRepository.findById(id)
@@ -171,22 +280,18 @@ public class AppointmentService {
                         "Appointment not found with id: " + id));
     }
 
-    // Full lawyer fetch from lawyer-service — used when we need fee/availability
-    private LawyerResponseDTO fetchLawyer(Long lawyerId) {
+    private LawyerResponseDTO fetchLawyerByUserId(UUID lawyerUserId) {
         try {
-            return lawyerServiceClient.getLawyerById(lawyerId);
+            return lawyerServiceClient.getLawyerByUserId(lawyerUserId);
         } catch (FeignException.NotFound e) {
             throw new IllegalArgumentException(
-                    "Lawyer not found with id: " + lawyerId);
+                    "Lawyer not found with userId: " + lawyerUserId);
         } catch (FeignException e) {
             throw new IllegalStateException(
                     "Could not reach lawyer-service. Please try again later.");
         }
     }
 
-    // Fetch lawyer name by going lawyer-service → get userId → user-service → get name.
-    // Used in list mappings. Falls back to "Unknown" so one bad call
-    // doesn't fail an entire list response.
     private String fetchLawyerName(UUID lawyerUserId) {
         try {
             return userServiceClient.getUserById(lawyerUserId).getFullName();
@@ -196,33 +301,13 @@ public class AppointmentService {
         }
     }
 
-    // Two-step name resolution for list mappings:
-    // lawyerId (lawyer-service PK) → userId (UUID) → fullName (user-service)
-    private String resolveLawyerName(Long lawyerId) {
-        try {
-            UUID lawyerUserId = lawyerServiceClient.getLawyerById(lawyerId).getUserId();
-            return fetchLawyerName(lawyerUserId);
-        } catch (FeignException e) {
-            log.warn("Could not resolve name for lawyerId: {}", lawyerId);
-            return "Unknown";
-        }
-    }
-
-    /*
-     * Valid status transitions:
-     * PENDING   → CONFIRMED, REJECTED, CANCELLED
-     * CONFIRMED → COMPLETED, CANCELLED
-     * REJECTED, CANCELLED, COMPLETED → terminal, no further transitions
-     */
-    private void validateStatusTransition(
-            AppointmentStatus current, AppointmentStatus next) {
-
+    private void validateStatusTransition(AppointmentStatus current, AppointmentStatus next) {
         boolean valid = switch (current) {
-            case PENDING -> next == AppointmentStatus.CONFIRMED
+            case REQUESTED -> next == AppointmentStatus.ACCEPTED
                     || next == AppointmentStatus.REJECTED
                     || next == AppointmentStatus.CANCELLED;
-            case CONFIRMED -> next == AppointmentStatus.COMPLETED
-                    || next == AppointmentStatus.CANCELLED;
+            case ACCEPTED, VIDEO_REQUESTED, SCHEDULED ->
+                    next == AppointmentStatus.CANCELLED;
             default -> false;
         };
 
@@ -232,22 +317,44 @@ public class AppointmentService {
         }
     }
 
-    // ── MAPPER ───────────────────────────────────────────────────
-
-    private AppointmentResponseDTO mapToResponse(Appointment a, String lawyerName) {
+    private AppointmentResponseDTO mapToResponse(Appointment appointment, String lawyerName) {
         return AppointmentResponseDTO.builder()
-                .id(a.getId())
-                .clientId(a.getClientId())
-                .lawyerId(a.getLawyerId())
+                .id(appointment.getId())
+                .clientId(appointment.getClientId())
+                .lawyerId(appointment.getLawyerId())
                 .lawyerName(lawyerName)
-                .appointmentDateTime(a.getAppointmentDateTime())
-                .durationMinutes(a.getDurationMinutes())
-                .description(a.getDescription())
-                .status(a.getStatus())
-                .lawyerNote(a.getLawyerNote())
-                .consultationFee(a.getConsultationFee())
-                .createdAt(a.getCreatedAt())
-                .updatedAt(a.getUpdatedAt())
+                .appointmentDateTime(appointment.getAppointmentDateTime())
+                .durationMinutes(appointment.getDurationMinutes())
+                .description(appointment.getDescription())
+                .status(appointment.getStatus())
+                .lawyerNote(appointment.getLawyerNote())
+                .meetingUrl(appointment.getMeetingUrl())
+                .consultationFee(appointment.getConsultationFee())
+                .createdAt(appointment.getCreatedAt())
+                .updatedAt(appointment.getUpdatedAt())
                 .build();
+    }
+
+    private void publishLifecycleEvent(Appointment appointment, AppointmentStatus status) {
+        WorkflowEventType eventType = switch (status) {
+            case ACCEPTED -> WorkflowEventType.APPOINTMENT_ACCEPTED;
+            case REJECTED -> WorkflowEventType.APPOINTMENT_REJECTED;
+            default -> null;
+        };
+
+        if (eventType == null) {
+            return;
+        }
+
+        workflowEventPublisher.publish(new WorkflowEvent(
+                eventType,
+                appointment.getId(),
+                appointment.getClientId().toString(),
+                appointment.getLawyerId().toString(),
+                appointment.getMeetingUrl(),
+                appointment.getAppointmentDateTime(),
+                "Appointment " + status.name().toLowerCase(),
+                OffsetDateTime.now()
+        ));
     }
 }

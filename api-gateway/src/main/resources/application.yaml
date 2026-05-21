@@ -51,7 +51,7 @@ spring:
         - id: video-session-service
           uri: lb://video-session-service
           predicates:
-            - Path=/video-session/**
+            - Path=/video-sessions/**
 
         - id: review-rating-service
           uri: lb://review-rating-service
@@ -105,7 +105,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8181/realms/legal-plaform
+          issuer-uri: http://localhost:8181/realms/legal-platform
 
 springdoc:
   swagger-ui:

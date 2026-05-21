@@ -35,7 +35,7 @@ public class ReviewController {
     // GET /reviews/lawyer/{lawyerId} — All reviews for a lawyer
     @GetMapping("/lawyer/{lawyerId}")
     public ResponseEntity<List<ReviewResponseDTO>> getByLawyerId(
-            @PathVariable Long lawyerId) {
+            @PathVariable UUID lawyerId) {
         return ResponseEntity.ok(reviewService.getByLawyerId(lawyerId));
     }
 
@@ -43,7 +43,7 @@ public class ReviewController {
     // Called by lawyer-profile-service or frontend to display star ratings
     @GetMapping("/lawyer/{lawyerId}/summary")
     public ResponseEntity<LawyerRatingSummaryDTO> getRatingSummary(
-            @PathVariable Long lawyerId) {
+            @PathVariable UUID lawyerId) {
         return ResponseEntity.ok(reviewService.getRatingSummary(lawyerId));
     }
 

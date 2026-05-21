@@ -31,6 +31,26 @@ spring:
         health-check-interval: 30s
         prefer-ip-address: true
 
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: lawyer-profile-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+
+app:
+  kafka:
+    topics:
+      reviewEvents: review.events.v1
+      reviewEventsDlq: review.events.v1.dlq
+
 management:
   endpoints:
     web:

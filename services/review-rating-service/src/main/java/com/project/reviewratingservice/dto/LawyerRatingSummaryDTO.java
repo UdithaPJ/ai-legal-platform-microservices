@@ -3,10 +3,12 @@ package com.project.reviewratingservice.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
 @Builder
 public class LawyerRatingSummaryDTO {
-    private Long lawyerId;
+    private UUID lawyerId;
     private Double averageRating;     // rounded to 1 decimal place
     private Integer totalReviews;
     private Integer fiveStars;

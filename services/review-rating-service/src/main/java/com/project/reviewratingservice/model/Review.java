@@ -21,9 +21,9 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Lawyer profile service ID (Long, PK of lawyer table)
+    // Lawyer userId (UUID) from user-service / keycloak
     @Column(nullable = false)
-    private Long lawyerId;
+    private UUID lawyerId;
 
     // User service UUID of the client submitting the review
     @Column(nullable = false)

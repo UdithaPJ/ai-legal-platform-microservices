@@ -44,13 +44,14 @@ public class SecurityConfig {
                         .pathMatchers("/ws-chat").permitAll()
 
                         // Admin-only actions (example)
-                        .pathMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
-
-                        // User endpoints
-                        .pathMatchers("/users/**").hasAnyRole("CLIENT", "ADMIN")
+//                        .pathMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
+//
+//                        // User endpoints
+//                        .pathMatchers("/users/**").hasAnyRole("CLIENT", "ADMIN")
 
                         // Everything else must be authenticated
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll()
+//                        .anyExchange().authenticated()
                 )
 
                 .oauth2ResourceServer(oauth2 ->

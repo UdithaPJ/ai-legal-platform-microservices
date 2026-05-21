@@ -4,11 +4,14 @@ import com.project.reviewratingservice.client.AppointmentServiceClient;
 import com.project.reviewratingservice.client.UserServiceClient;
 import com.project.reviewratingservice.dto.*;
 import com.project.reviewratingservice.model.Review;
+import com.project.reviewratingservice.outbox.OutboxEventRepository;
+import com.project.reviewratingservice.outbox.ReviewCreatedEventFactory;
 import com.project.reviewratingservice.repository.ReviewRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,9 +25,12 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final AppointmentServiceClient appointmentServiceClient;
     private final UserServiceClient userServiceClient;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ReviewCreatedEventFactory reviewCreatedEventFactory;
 
     // ── CREATE ──────────────────────────────────────────────────
 
+    @Transactional
     public ReviewResponseDTO submitReview(ReviewRequestDTO request) {
 
         // 1. Verify the appointment exists and belongs to this client/lawyer pair
@@ -33,6 +39,10 @@ public class ReviewService {
         if (!appointment.getLawyerId().equals(request.getLawyerId())) {
             throw new IllegalArgumentException(
                     "This appointment does not belong to the specified lawyer");
+        }
+        if (!appointment.getClientId().equals(request.getClientId())) {
+            throw new IllegalArgumentException(
+                    "This appointment does not belong to the specified client");
         }
 
         // 2. Verify the appointment is COMPLETED
@@ -70,6 +80,8 @@ public class ReviewService {
         log.info("Review submitted for lawyerId: {} by clientId: {} — rating: {}",
                 saved.getLawyerId(), saved.getClientId(), saved.getRating());
 
+        outboxEventRepository.save(reviewCreatedEventFactory.buildOutboxEvent(saved));
+
         String clientName = fetchClientName(saved.getClientId());
         return mapToResponse(saved, clientName);
     }
@@ -81,7 +93,7 @@ public class ReviewService {
         return mapToResponse(review, fetchClientName(review.getClientId()));
     }
 
-    public List<ReviewResponseDTO> getByLawyerId(Long lawyerId) {
+    public List<ReviewResponseDTO> getByLawyerId(UUID lawyerId) {
         return reviewRepository.findByLawyerId(lawyerId)
                 .stream()
                 .map(r -> mapToResponse(r, fetchClientName(r.getClientId())))
@@ -96,7 +108,7 @@ public class ReviewService {
     }
 
     // Returns the full rating breakdown for a lawyer's profile page
-    public LawyerRatingSummaryDTO getRatingSummary(Long lawyerId) {
+    public LawyerRatingSummaryDTO getRatingSummary(UUID lawyerId) {
 
         Integer total = reviewRepository.countByLawyerId(lawyerId);
         Double average = reviewRepository.findAverageRatingByLawyerId(lawyerId);
@@ -179,7 +191,7 @@ public class ReviewService {
         }
     }
 
-    private Integer countStars(Long lawyerId, Integer stars) {
+    private Integer countStars(UUID lawyerId, Integer stars) {
         Integer count = reviewRepository.countByLawyerIdAndRating(lawyerId, stars);
         return count != null ? count : 0;
     }

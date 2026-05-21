@@ -25,32 +25,36 @@ public class MessageService {
             String senderId,
             String content
     ) {
-
         if (!senderId.equals(clientId) && !senderId.equals(lawyerId)) {
             throw new RuntimeException("Unauthorized: sender not part of conversation");
         }
 
-        // 1. Find or create conversation
         Conversation conversation = conversationRepository
                 .findByClientIdAndLawyerIdAndAppointmentId(clientId, lawyerId, appointmentId)
-                .orElseGet(() -> {
-                    Conversation newConv = Conversation.builder()
-                            .id(UUID.randomUUID())
-                            .clientId(clientId)
-                            .lawyerId(lawyerId)
-                            .appointmentId(appointmentId)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    return conversationRepository.save(newConv);
-                });
+                .orElseThrow(() -> new RuntimeException(
+                        "Conversation is not available for this appointment"));
 
-        // 2. Create message
+        validateConversationEnabled(conversation);
+
+        return saveUserMessage(conversation.getId(), senderId, content);
+    }
+
+    public Message sendSystemMessage(
+            String clientId,
+            String lawyerId,
+            Long appointmentId,
+            String content,
+            boolean enableConversation
+    ) {
+        Conversation conversation = ensureConversation(
+                clientId, lawyerId, appointmentId, enableConversation);
+
         Message message = Message.builder()
                 .id(UUID.randomUUID())
                 .conversationId(conversation.getId())
-                .senderId(senderId)
+                .senderId("SYSTEM")
                 .content(content)
-                .messageType("TEXT")
+                .messageType("SYSTEM")
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -71,16 +75,51 @@ public class MessageService {
             String senderId,
             String content
     ) {
-
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
 
-        // SECURITY CHECK
-        if (!senderId.equals(conversation.getClientId()) &&
-                !senderId.equals(conversation.getLawyerId())) {
+        if (!senderId.equals(conversation.getClientId())
+                && !senderId.equals(conversation.getLawyerId())) {
             throw new RuntimeException("Unauthorized");
         }
 
+        validateConversationEnabled(conversation);
+
+        return saveUserMessage(conversationId, senderId, content);
+    }
+
+    private Conversation ensureConversation(
+            String clientId,
+            String lawyerId,
+            Long appointmentId,
+            boolean enableConversation
+    ) {
+        Conversation conversation = conversationRepository
+                .findByClientIdAndLawyerIdAndAppointmentId(clientId, lawyerId, appointmentId)
+                .orElseGet(() -> conversationRepository.save(Conversation.builder()
+                        .id(UUID.randomUUID())
+                        .clientId(clientId)
+                        .lawyerId(lawyerId)
+                        .appointmentId(appointmentId)
+                        .enabled(enableConversation)
+                        .createdAt(LocalDateTime.now())
+                        .build()));
+
+        if (enableConversation && !Boolean.TRUE.equals(conversation.getEnabled())) {
+            conversation.setEnabled(true);
+            conversation = conversationRepository.save(conversation);
+        }
+
+        return conversation;
+    }
+
+    private void validateConversationEnabled(Conversation conversation) {
+        if (!Boolean.TRUE.equals(conversation.getEnabled())) {
+            throw new RuntimeException("Conversation is not enabled for messaging yet");
+        }
+    }
+
+    private Message saveUserMessage(UUID conversationId, String senderId, String content) {
         Message message = Message.builder()
                 .id(UUID.randomUUID())
                 .conversationId(conversationId)

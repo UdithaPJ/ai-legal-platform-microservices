@@ -31,6 +31,10 @@ public class LawyerResponseDTO {
 
     private Boolean isAvailable;
 
+    private BigDecimal averageRating;
+
+    private Integer reviewCount;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

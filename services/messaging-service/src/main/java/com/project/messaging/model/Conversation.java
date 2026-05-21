@@ -25,5 +25,7 @@ public class Conversation {
 
     private UUID documentId;
 
+    private Boolean enabled;
+
     private LocalDateTime createdAt;
 }

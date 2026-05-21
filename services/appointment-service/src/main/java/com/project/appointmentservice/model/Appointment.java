@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
 
 @Entity
 @Table(name = "appointments")
@@ -23,15 +25,15 @@ public class Appointment {
 
     // ID from user-service (the client making the booking)
     @Column(nullable = false)
-    private Long clientId;
+    private UUID clientId;
 
     // ID from lawyer-service (the lawyer being booked)
     @Column(nullable = false)
-    private Long lawyerId;
+    private UUID lawyerId;
 
     // Requested date and time for the consultation
-    @Column(nullable = false)
-    private LocalDateTime appointmentDateTime;
+    @Column
+    private OffsetDateTime appointmentDateTime;
 
     // Duration in minutes (e.g. 30, 60)
     @Column(nullable = false)
@@ -49,26 +51,29 @@ public class Appointment {
     @Column(columnDefinition = "TEXT")
     private String lawyerNote;
 
+    @Column(name = "meeting_url", columnDefinition = "TEXT")
+    private String meetingUrl;
+
     // Consultation fee snapshot at booking time
     // (fee may change later; we store what was agreed at booking)
     @Column(nullable = false)
     private BigDecimal consultationFee;
 
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (status == null) status = AppointmentStatus.PENDING;
+        createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        if (status == null) status = AppointmentStatus.REQUESTED;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 }

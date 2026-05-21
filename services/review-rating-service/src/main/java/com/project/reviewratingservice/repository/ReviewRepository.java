@@ -14,7 +14,7 @@ import java.util.UUID;
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     // All reviews for a specific lawyer (used for listing + average)
-    List<Review> findByLawyerId(Long lawyerId);
+    List<Review> findByLawyerId(UUID lawyerId);
 
     // All reviews submitted by a specific client
     List<Review> findByClientId(UUID clientId);
@@ -24,21 +24,21 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     // Check if this client already reviewed this lawyer
     // (secondary guard — primary is existsByAppointmentId)
-    boolean existsByLawyerIdAndClientId(Long lawyerId, UUID clientId);
+    boolean existsByLawyerIdAndClientId(UUID lawyerId, UUID clientId);
 
     // Find review for a specific appointment (for update/delete)
     Optional<Review> findByAppointmentId(Long appointmentId);
 
     // Average rating for a lawyer — computed in DB for efficiency
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.lawyerId = :lawyerId")
-    Double findAverageRatingByLawyerId(@Param("lawyerId") Long lawyerId);
+    Double findAverageRatingByLawyerId(@Param("lawyerId") UUID lawyerId);
 
     // Count per star level — used for the rating breakdown
     @Query("SELECT COUNT(r) FROM Review r WHERE r.lawyerId = :lawyerId AND r.rating = :rating")
     Integer countByLawyerIdAndRating(
-            @Param("lawyerId") Long lawyerId,
+            @Param("lawyerId") UUID lawyerId,
             @Param("rating") Integer rating);
 
     // Total review count for a lawyer
-    Integer countByLawyerId(Long lawyerId);
+    Integer countByLawyerId(UUID lawyerId);
 }

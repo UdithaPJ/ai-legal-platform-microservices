@@ -36,6 +36,17 @@ spring:
         health-check-interval: 10s
         prefer-ip-address: true
 
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+app:
+  kafka:
+    topics:
+      workflowEvents: workflow.events.v1
+
 feign:
   client:
     config:

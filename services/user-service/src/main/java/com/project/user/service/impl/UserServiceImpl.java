@@ -32,8 +32,23 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse createUser(CreateUserRequest request) {
 
+        if (request.getKeycloakId() == null || request.getKeycloakId().isBlank()) {
+            throw new IllegalArgumentException("keycloakId is required");
+        }
+
+        UUID userId;
+        try {
+            userId = UUID.fromString(request.getKeycloakId());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("keycloakId must be a valid UUID");
+        }
+
+        if (userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User already exists");
+        }
+
         User user = User.builder()
-                .id(UUID.randomUUID())
+                .id(userId)
                 .keycloakId(request.getKeycloakId())
                 .email(request.getEmail())
                 .fullName(request.getFullName())

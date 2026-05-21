@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS conversations (
         appointment_id BIGINT NULL,
         document_id UUID NULL,
 
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
