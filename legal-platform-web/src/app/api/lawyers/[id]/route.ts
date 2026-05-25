@@ -1,0 +1,17 @@
+import { NextRequest } from "next/server";
+import { proxyToGateway } from "@/lib/bff";
+
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+  return proxyToGateway(req, `/lawyers/${id}`);
+}
+
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+  return proxyToGateway(req, `/lawyers/${id}`);
+}
+
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+  return proxyToGateway(req, `/lawyers/${id}`);
+}
