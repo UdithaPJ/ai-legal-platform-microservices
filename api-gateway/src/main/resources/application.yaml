@@ -1,6 +1,25 @@
 server:
   port: 8080
 
+# ── CORS ──────────────────────────────────────────────────────────────────
+# Dev:  localhost:3000 only.
+# Prod: docker-compose.tunnel.yml overrides CORS_ALLOWED_ORIGINS with the
+#       Azure SWA origin so nothing needs to change here for production.
+cors:
+  # Comma-separated string — @Value on List<String> splits by comma.
+  # YAML list syntax (- item) creates indexed keys (cors.allowed-origins[0]) which
+  # @Value cannot resolve as a single placeholder.
+  # Docker / tunnel override: set CORS_ALLOWED_ORIGINS env var with comma-separated origins.
+  allowed-origins: "http://localhost:3000"
+
+# ── Keycloak JWT config ────────────────────────────────────────────────────
+keycloak:
+  # Dev:    http://localhost:8181/...  (default, no env var needed)
+  # Docker: overridden by KEYCLOAK_JWKS_URI=http://keycloak:8080/... in docker-compose.yml
+  jwks-uri: http://localhost:8181/realms/legal-platform/protocol/openid-connect/certs
+  # Comma-separated string for the same @Value / List<String> reason as cors.allowed-origins.
+  trusted-issuers: "http://localhost:8181/realms/legal-platform,https://auth.legalai.bond/realms/legal-platform"
+
 spring:
   application:
     name: api-gateway
@@ -23,6 +42,10 @@ spring:
           uri: lb://lawyer-service
           predicates:
             - Path=/lawyers/**
+        - id: admin-lawyer-service
+          uri: lb://lawyer-service
+          predicates:
+            - Path=/admin/lawyers/**
         - id: appointment-service
           uri: lb://appointment-service
           predicates:
@@ -105,6 +128,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
+          # issuer-uri is overridden by the custom ReactiveJwtDecoder bean in SecurityConfig.
           issuer-uri: http://localhost:8181/realms/legal-platform
 
 springdoc:

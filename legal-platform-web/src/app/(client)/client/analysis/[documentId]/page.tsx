@@ -1,108 +1,52 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ArrowLeft, AlertTriangle, CheckCircle, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  FileText,
+  LoaderCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiFetch } from "@/lib/api-client";
+import { formatDateTime, normalizeRiskyClause } from "@/lib/display";
+import type { DocumentStatusResponse, RiskyClause } from "@/types/analysis";
 
-type RiskyClause = {
-  clause: string;
-  risk_level: "HIGH" | "MEDIUM" | "LOW";
-  explanation: string;
-  recommendation: string;
-};
-
-type AnalysisResult = {
-  id: string;
-  filename: string;
-  status: "pending" | "processing" | "completed" | "failed";
-  summary?: string;
-  simplified_explanation?: string;
-  risky_clauses?: RiskyClause[];
-  uploaded_at: string;
-  completed_at?: string;
-};
-
-const mockResult: AnalysisResult = {
-  id: "doc-001",
-  filename: "startup_acquisition_contract.pdf",
-  status: "completed",
-  summary:
-    "This is a standard startup acquisition agreement between Acme Corp (acquirer) and TechVenture Inc (target). The agreement covers a total consideration of $4.2M with 60% in cash and 40% in restricted stock. Key provisions include a 3-year non-compete, IP assignment, and standard representations and warranties. Several clauses require attention before signing.",
-  simplified_explanation:
-    "In plain terms: Acme Corp is buying TechVenture Inc for $4.2 million. You'll receive some money immediately and some company stock that you can't sell for a while. You'll also need to promise not to start a competing business for 3 years anywhere in North America, which is quite broad. The contract also says everything you created at TechVenture belongs to Acme Corp. There are some problematic sections highlighted below that your lawyer should review.",
-  risky_clauses: [
-    {
-      clause: "Section 7.3 — Non-Compete Agreement",
-      risk_level: "HIGH",
-      explanation:
-        "The non-compete restricts the founders from engaging in any business activity that competes with Acme Corp's entire business portfolio for 3 years across all of North America. This is unusually broad in scope, geography, and duration.",
-      recommendation:
-        "Negotiate to limit the scope to directly competing products, reduce the duration to 12–18 months, and restrict geography to specific states where TechVenture operated.",
-    },
-    {
-      clause: "Section 12.1 — Intellectual Property Assignment",
-      risk_level: "HIGH",
-      explanation:
-        "The IP assignment clause is retroactive and assigns all inventions created by founders in the 2 years prior to closing, not just during employment. This could capture personal projects unrelated to TechVenture.",
-      recommendation:
-        "Add a schedule that explicitly carves out personal projects not related to TechVenture's business. Request a list of excluded inventions attachment.",
-    },
-    {
-      clause: "Section 4.8 — Indemnification Cap",
-      risk_level: "MEDIUM",
-      explanation:
-        "The indemnification cap is set at 100% of total deal consideration with no sunset clause. Standard market terms typically cap indemnification at 10–20% with an 18-month survival period.",
-      recommendation:
-        "Negotiate the cap down to 15–20% of consideration and add an 18-month survival period for general representations, with a 3-year period only for fundamental representations.",
-    },
-    {
-      clause: "Section 9.2 — Earnout Metrics",
-      risk_level: "MEDIUM",
-      explanation:
-        "The earnout is tied to revenue targets that Acme Corp controls through pricing decisions and resource allocation. This creates a conflict of interest where the acquirer can influence whether earnout milestones are met.",
-      recommendation:
-        "Add protective covenants requiring the acquirer to operate the business in good faith, maintain sufficient resources, and not take actions designed to frustrate earnout achievement.",
-    },
-    {
-      clause: "Section 15.4 — Governing Law",
-      risk_level: "LOW",
-      explanation:
-        "The governing law is Delaware, which is standard and favourable. The dispute resolution clause requires arbitration in New York, which may be inconvenient but is common.",
-      recommendation: "No action required unless you prefer a different arbitration venue.",
-    },
-  ],
-  uploaded_at: "2026-05-24T09:15:00Z",
-  completed_at: "2026-05-24T09:17:30Z",
-};
-
-const riskColors: Record<RiskyClause["risk_level"], string> = {
+const riskColors: Record<"HIGH" | "MEDIUM" | "LOW", string> = {
   HIGH: "bg-red-50 border-red-200 text-red-700",
   MEDIUM: "bg-amber-50 border-amber-200 text-amber-700",
   LOW: "bg-blue-50 border-blue-200 text-blue-700",
 };
 
-const riskBadge: Record<RiskyClause["risk_level"], string> = {
+const riskBadge: Record<"HIGH" | "MEDIUM" | "LOW", string> = {
   HIGH: "bg-red-100 text-red-700",
   MEDIUM: "bg-amber-100 text-amber-700",
   LOW: "bg-blue-100 text-blue-700",
 };
 
 function ClauseCard({ clause }: { clause: RiskyClause }) {
-  const [open, setOpen] = useState(clause.risk_level === "HIGH");
+  const riskLevel = clause.risk_level ?? "MEDIUM";
+  const [open, setOpen] = useState(riskLevel === "HIGH");
+
   return (
-    <div className={`rounded-xl border p-4 ${riskColors[clause.risk_level]}`}>
+    <div className={`rounded-xl border p-4 ${riskColors[riskLevel]}`}>
       <button className="flex w-full items-start justify-between gap-3 text-left" onClick={() => setOpen(!open)}>
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <div>
-            <p className="font-medium text-sm">{clause.clause}</p>
-            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${riskBadge[clause.risk_level]}`}>
-              {clause.risk_level} RISK
+            <p className="text-sm font-medium">{clause.clause}</p>
+            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${riskBadge[riskLevel]}`}>
+              {riskLevel} RISK
             </span>
           </div>
         </div>
-        {open ? <ChevronUp className="size-4 shrink-0 mt-0.5" /> : <ChevronDown className="size-4 shrink-0 mt-0.5" />}
+        {open ? <ChevronUp className="mt-0.5 size-4 shrink-0" /> : <ChevronDown className="mt-0.5 size-4 shrink-0" />}
       </button>
       {open && (
         <div className="mt-3 space-y-3 pl-7">
@@ -120,22 +64,84 @@ function ClauseCard({ clause }: { clause: RiskyClause }) {
   );
 }
 
-export default function AnalysisResultPage(props: { params: Promise<{ documentId: string }> }) {
-  const [result] = useState<AnalysisResult>(mockResult);
-  const [polling, setPolling] = useState(false);
+export default function AnalysisResultPage() {
+  const params = useParams<{ documentId: string }>();
+  const documentId = params.documentId;
+
+  const [result, setResult] = useState<DocumentStatusResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (result.status === "pending" || result.status === "processing") {
-      setPolling(true);
-    }
-  }, [result.status]);
+    if (!documentId) return;
 
-  if (polling) {
+    let cancelled = false;
+    const intervalId: number = window.setInterval(() => {
+      void loadResult();
+    }, 4000);
+
+    async function loadResult() {
+      try {
+        const data = await apiFetch<DocumentStatusResponse>(`/analysis/documents/${documentId}`);
+        if (!cancelled) {
+          setResult(data);
+          setError(null);
+          setLoading(false);
+        }
+        if (data.status !== "pending" && data.status !== "processing" && intervalId) {
+          window.clearInterval(intervalId);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load analysis.");
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadResult();
+
+    return () => {
+      cancelled = true;
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [documentId]);
+
+  const riskyClauses = useMemo(
+    () => result?.analysis?.risky_clauses?.map(normalizeRiskyClause) ?? [],
+    [result]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <LoaderCircle className="size-12 animate-spin text-blue-400" />
+        <p className="mt-4 text-lg font-semibold text-gray-800">Loading analysis...</p>
+      </div>
+    );
+  }
+
+  if (error || !result) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <AlertTriangle className="size-12 text-red-400" />
+        <p className="mt-4 text-lg font-semibold text-gray-800">Could not load this document</p>
+        <p className="mt-2 text-sm text-gray-500">{error ?? "Please try again later."}</p>
+        <Link href="/client/analysis" className="mt-6 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+          Back to Documents
+        </Link>
+      </div>
+    );
+  }
+
+  if (result.status === "pending" || result.status === "processing") {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <Clock className="size-12 animate-pulse text-blue-400" />
-        <p className="mt-4 text-lg font-semibold text-gray-800">Analysing your document…</p>
-        <p className="mt-2 text-sm text-gray-500">This usually takes 30–60 seconds. This page will update automatically.</p>
+        <p className="mt-4 text-lg font-semibold text-gray-800">Analyzing your document...</p>
+        <p className="mt-2 text-sm text-gray-500">This page refreshes automatically while the AI service is running.</p>
       </div>
     );
   }
@@ -145,7 +151,7 @@ export default function AnalysisResultPage(props: { params: Promise<{ documentId
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <AlertTriangle className="size-12 text-red-400" />
         <p className="mt-4 text-lg font-semibold text-gray-800">Analysis failed</p>
-        <p className="mt-2 text-sm text-gray-500">We couldn't analyse this document. Please try uploading it again.</p>
+        <p className="mt-2 text-sm text-gray-500">We could not analyze this document. Please upload it again.</p>
         <Link href="/client/analysis" className="mt-6 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
           Back to Documents
         </Link>
@@ -153,9 +159,9 @@ export default function AnalysisResultPage(props: { params: Promise<{ documentId
     );
   }
 
-  const highCount = result.risky_clauses?.filter((c) => c.risk_level === "HIGH").length ?? 0;
-  const mediumCount = result.risky_clauses?.filter((c) => c.risk_level === "MEDIUM").length ?? 0;
-  const lowCount = result.risky_clauses?.filter((c) => c.risk_level === "LOW").length ?? 0;
+  const highCount = riskyClauses.filter((clause) => clause.risk_level === "HIGH").length;
+  const mediumCount = riskyClauses.filter((clause) => clause.risk_level === "MEDIUM").length;
+  const lowCount = riskyClauses.filter((clause) => clause.risk_level === "LOW").length;
 
   return (
     <div className="space-y-6">
@@ -165,16 +171,13 @@ export default function AnalysisResultPage(props: { params: Promise<{ documentId
         </Link>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{result.filename}</h1>
-          <p className="text-xs text-gray-500">
-            Analysed {result.completed_at ? new Date(result.completed_at).toLocaleString() : ""}
-          </p>
+          <p className="text-xs text-gray-500">Uploaded {formatDateTime(result.created_at)}</p>
         </div>
         <span className="ml-auto flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
           <CheckCircle className="size-3.5" /> Analysis complete
         </span>
       </div>
 
-      {/* Risk summary bar */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "High Risk", count: highCount, color: "text-red-600", bg: "bg-red-50 border-red-100" },
@@ -183,30 +186,31 @@ export default function AnalysisResultPage(props: { params: Promise<{ documentId
         ].map(({ label, count, color, bg }) => (
           <div key={label} className={`rounded-xl border p-4 text-center ${bg}`}>
             <p className={`text-3xl font-bold ${color}`}>{count}</p>
-            <p className="text-xs text-gray-500 mt-1">{label} Clauses</p>
+            <p className="mt-1 text-xs text-gray-500">{label} Clauses</p>
           </div>
         ))}
       </div>
 
-      {/* Summary */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="size-4" /> Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm leading-relaxed text-gray-700">{result.summary}</CardContent>
+        <CardContent className="text-sm leading-relaxed text-gray-700">
+          {result.analysis?.summary ?? "No summary was returned for this document."}
+        </CardContent>
       </Card>
 
-      {/* Plain English */}
       <Card>
         <CardHeader>
           <CardTitle>Plain English Explanation</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm leading-relaxed text-gray-700">{result.simplified_explanation}</CardContent>
+        <CardContent className="text-sm leading-relaxed text-gray-700">
+          {result.analysis?.simplified_explanation ?? "No simplified explanation was returned for this document."}
+        </CardContent>
       </Card>
 
-      {/* Risky clauses */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -214,9 +218,11 @@ export default function AnalysisResultPage(props: { params: Promise<{ documentId
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {result.risky_clauses?.map((clause) => (
-            <ClauseCard key={clause.clause} clause={clause} />
-          ))}
+          {riskyClauses.length > 0 ? (
+            riskyClauses.map((clause, index) => <ClauseCard key={`${clause.clause}-${index}`} clause={clause} />)
+          ) : (
+            <p className="text-sm text-gray-500">No risky clauses were returned for this document.</p>
+          )}
         </CardContent>
       </Card>
     </div>

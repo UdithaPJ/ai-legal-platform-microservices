@@ -1,0 +1,30 @@
+# Cloudflare Tunnel configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# Replace <TUNNEL_ID> with the UUID printed by: cloudflared tunnel create legal-platform
+#
+# Two ingress rules:
+#   api.legalai.bond   → Spring Cloud Gateway  (localhost:8080)
+#   auth.legalai.bond  → Keycloak               (localhost:8181)
+# ─────────────────────────────────────────────────────────────────────────────
+
+tunnel: d70a479a-de7a-4282-874d-bb3f39a574e1
+credentials-file: /home/nonroot/tunnel-credentials.json
+
+ingress:
+  - hostname: api.legalai.bond
+    service: http://localhost:8080
+    originRequest:
+      connectTimeout: 30s
+      tcpKeepAlive: 30s
+      keepAliveTimeout: 90s
+
+  - hostname: auth.legalai.bond
+    service: http://localhost:8181
+    originRequest:
+      connectTimeout: 30s
+  
+  - hostname: app.legalai.bond
+    service: http://host.docker.internal:3000
+
+  # Required catch-all
+  - service: http_status:404

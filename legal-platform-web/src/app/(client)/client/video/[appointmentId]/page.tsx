@@ -1,15 +1,94 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Video, Mic, MicOff, VideoOff, PhoneOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Video, VideoOff } from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api-client";
+import type { AppointmentResponseDTO } from "@/types/appointment";
+import type { VideoSessionResponseDTO } from "@/types/video";
 
-const MOCK_MEETING_URL = "https://meet.jit.si/LegalPlatformDemo-appt-1";
+export default function ClientVideoPage() {
+  const params = useParams<{ appointmentId: string }>();
+  const { data: authData } = useSession();
 
-export default function ClientVideoPage(props: { params: Promise<{ appointmentId: string }> }) {
+  const [appointment, setAppointment] = useState<AppointmentResponseDTO | null>(null);
+  const [session, setSession] = useState<VideoSessionResponseDTO | null>(null);
   const [joined, setJoined] = useState(false);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!params.appointmentId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const name = encodeURIComponent(authData?.user?.name ?? "Client");
+        const uid  = encodeURIComponent(authData?.user?.email ?? "client");
+        const mail = encodeURIComponent(authData?.user?.email ?? "");
+        const [appointmentData, sessionData] = await Promise.all([
+          apiFetch<AppointmentResponseDTO>(`/appointments/${params.appointmentId}`),
+          apiFetch<VideoSessionResponseDTO>(
+            `/video-sessions/appointment/${params.appointmentId}?moderator=false&displayName=${name}&userId=${uid}&email=${mail}`
+          ),
+        ]);
+
+        if (!cancelled) {
+          setAppointment(appointmentData);
+          setSession(sessionData);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load video session.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params.appointmentId]);
+
+  async function joinSession() {
+    if (!params.appointmentId) return;
+
+    try {
+      const name = encodeURIComponent(authData?.user?.name ?? "Client");
+      const uid  = encodeURIComponent(authData?.user?.email ?? "client");
+      const mail = encodeURIComponent(authData?.user?.email ?? "");
+      const joinedSession = await apiFetch<VideoSessionResponseDTO>(
+        `/video-sessions/appointment/${params.appointmentId}/join?moderator=false&displayName=${name}&userId=${uid}&email=${mail}`,
+        { method: "POST" }
+      );
+      setSession(joinedSession);
+      setJoined(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to join video session.");
+    }
+  }
+
+  if (loading) {
+    return <div className="rounded-xl border bg-white px-4 py-8 text-center text-sm text-gray-500">Loading video session...</div>;
+  }
+
+  if (error || !session) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-700">
+        {error ?? "Could not load this video session."}
+      </div>
+    );
+  }
 
   if (!joined) {
     return (
@@ -20,7 +99,7 @@ export default function ClientVideoPage(props: { params: Promise<{ appointmentId
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">Video Consultation</h1>
           <p className="mt-2 text-sm text-gray-500">
-            You're about to join a secure video session with your lawyer. <br />
+            You&apos;re about to join a secure video session with {appointment?.lawyerName ?? "your lawyer"}. <br />
             Make sure your camera and microphone are enabled.
           </p>
         </div>
@@ -45,7 +124,7 @@ export default function ClientVideoPage(props: { params: Promise<{ appointmentId
           </button>
         </div>
         <button
-          onClick={() => setJoined(true)}
+          onClick={() => void joinSession()}
           className="rounded-lg bg-blue-600 px-8 py-3 text-sm font-semibold text-white hover:bg-blue-700"
         >
           Join Session
@@ -59,26 +138,25 @@ export default function ClientVideoPage(props: { params: Promise<{ appointmentId
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-xl border bg-gray-900">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="size-2 rounded-full bg-green-400 animate-pulse" />
+          <div className="size-2 animate-pulse rounded-full bg-green-400" />
           <span className="text-sm font-medium text-white">Live Session</span>
         </div>
-        <span className="text-xs text-gray-400">Sarah Mitchell · Corporate Law</span>
+        <span className="text-xs text-gray-400">{appointment?.lawyerName ?? "Lawyer"}</span>
       </div>
 
-      {/* Jitsi iframe */}
       <div className="flex-1 overflow-hidden">
         <iframe
-          src={`${MOCK_MEETING_URL}#userInfo.displayName="Client"`}
+          // JaaS JWT goes as a query param so Jitsi authenticates the client.
+          // Config overrides go in the URL fragment to skip the pre-join page.
+          src={`${session.meetingUrl}${session.jitsiToken ? `?jwt=${session.jitsiToken}` : ""}#config.prejoinPageEnabled=false&config.disableDeepLinking=true`}
           allow="camera; microphone; fullscreen; display-capture; autoplay"
           className="h-full w-full border-none"
           title="Video Session"
         />
       </div>
 
-      {/* Controls overlay */}
       <div className="flex items-center justify-center gap-4 bg-gray-900 py-4">
         <button
           onClick={() => setMicOn(!micOn)}

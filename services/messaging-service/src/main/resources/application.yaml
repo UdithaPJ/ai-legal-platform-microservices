@@ -23,7 +23,6 @@ spring:
     consul:
       host: localhost
       port: 8500
-
       discovery:
         prefer-ip-address: true
 
@@ -31,6 +30,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
+          # issuer-uri is overridden by the custom JwtDecoder bean in SecurityConfig,
+          # which accepts localhost, LAN IP, and the public Cloudflare domain.
           issuer-uri: http://localhost:8181/realms/legal-platform
 
   kafka:
@@ -43,6 +44,13 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     listener:
       ack-mode: record
+
+keycloak:
+  # Dev:    http://localhost:8181/...  (default, no env var needed)
+  # Docker: overridden by KEYCLOAK_JWKS_URI=http://keycloak:8080/... in docker-compose.yml
+  jwks-uri: http://localhost:8181/realms/legal-platform/protocol/openid-connect/certs
+  # Comma-separated — @Value on List<String> cannot resolve YAML list-syntax keys.
+  trusted-issuers: "http://localhost:8181/realms/legal-platform,https://auth.legalai.bond/realms/legal-platform"
 
 app:
   kafka:

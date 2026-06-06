@@ -11,4 +11,6 @@ export interface VideoSessionResponseDTO {
   endedAt?: string;
   createdAt: string;
   updatedAt: string;
+  /** Short-lived JaaS JWT — moderator=true for the lawyer, false for the client. */
+  jitsiToken?: string;
 }

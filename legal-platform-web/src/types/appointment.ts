@@ -12,6 +12,7 @@ export interface AppointmentResponseDTO {
   id: number;
   clientId: string;
   lawyerId: string;
+  lawyerName: string;
   appointmentDateTime?: string;
   durationMinutes?: number;
   description: string;
@@ -26,12 +27,13 @@ export interface AppointmentResponseDTO {
 export interface CreateAppointmentRequest {
   clientId: string;
   lawyerId: string;
+  appointmentDateTime?: string;
+  durationMinutes: number;
   description: string;
 }
 
 export interface ScheduleAppointmentRequest {
   appointmentDateTime: string;
-  durationMinutes: number;
 }
 
 export interface UpdateAppointmentStatusRequest {

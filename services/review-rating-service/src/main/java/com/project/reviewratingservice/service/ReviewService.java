@@ -107,6 +107,13 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    public List<ReviewResponseDTO> getAllReviews() {
+        return reviewRepository.findAll()
+                .stream()
+                .map(r -> mapToResponse(r, fetchClientName(r.getClientId())))
+                .collect(Collectors.toList());
+    }
+
     // Returns the full rating breakdown for a lawyer's profile page
     public LawyerRatingSummaryDTO getRatingSummary(UUID lawyerId) {
 

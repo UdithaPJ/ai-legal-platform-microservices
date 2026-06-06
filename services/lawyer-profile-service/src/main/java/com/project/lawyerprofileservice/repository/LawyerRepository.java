@@ -2,7 +2,7 @@ package com.project.lawyerprofileservice.repository;
 
 import com.project.lawyerprofileservice.model.Lawyer;
 import com.project.lawyerprofileservice.model.Specialization;
-import jakarta.validation.constraints.NotNull;
+import com.project.lawyerprofileservice.model.VerificationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,10 +17,16 @@ public interface LawyerRepository extends JpaRepository<Lawyer, Long> {
 
     Optional<Lawyer> findByUserId(UUID userId);
 
-    List<Lawyer> findByIsAvailableTrue();
+    /** Returns only VERIFIED + available lawyers (client-facing search). */
+    List<Lawyer> findByIsAvailableTrueAndVerificationStatus(VerificationStatus status);
 
-    @Query("SELECT DISTINCT l FROM Lawyer l JOIN l.specializations s WHERE s = :specialization")
-    List<Lawyer> findBySpecialization(@Param("specialization") Specialization specialization);
+    @Query("SELECT DISTINCT l FROM Lawyer l JOIN l.specializations s " +
+           "WHERE s = :specialization " +
+           "AND l.isAvailable = true " +
+           "AND l.verificationStatus = 'VERIFIED'")
+    List<Lawyer> findVerifiedBySpecialization(@Param("specialization") Specialization specialization);
+
+    List<Lawyer> findByVerificationStatus(VerificationStatus status);
 
     boolean existsByBarRegistrationNumber(String barRegistrationNumber);
 

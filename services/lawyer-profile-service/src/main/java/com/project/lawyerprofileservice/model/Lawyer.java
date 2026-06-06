@@ -39,19 +39,23 @@ public class Lawyer {
     @Column(name = "specialization")
     private List<Specialization> specializations;
 
-    @Column(nullable = false)
+    // Nullable: populated during onboarding Step 1
+    @Column
     private Integer yearsOfExperience;
 
     @Column(columnDefinition = "TEXT")
     private String bio;
 
-    @Column(name = "consultation_fee", nullable = false, precision = 10, scale = 2)
+    // Nullable: populated during onboarding Step 3
+    @Column(name = "consultation_fee", precision = 10, scale = 2)
     private BigDecimal consultationFee;
 
     private String location;
 
+    // FALSE by default — flipped to TRUE only when admin sets VERIFIED
     @Column(nullable = false)
-    private Boolean isAvailable;
+    @Builder.Default
+    private Boolean isAvailable = false;
 
     @Column(name = "total_rating", nullable = false)
     @Builder.Default
@@ -65,23 +69,40 @@ public class Lawyer {
     @Builder.Default
     private BigDecimal averageRating = BigDecimal.ZERO;
 
+    /**
+     * Tracks the lawyer through the onboarding → admin-review lifecycle.
+     * Default: PENDING_ONBOARDING (skeleton record created on registration).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_status", nullable = false)
+    @Builder.Default
+    private VerificationStatus verificationStatus = VerificationStatus.PENDING_ONBOARDING;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    /** Updates the rolling average rating when a new review arrives. */
     public void applyNewRating(int rating) {
         int newTotal = (totalRating != null ? totalRating : 0) + rating;
         int newCount = (reviewCount != null ? reviewCount : 0) + 1;
         this.totalRating = newTotal;
         this.reviewCount = newCount;
-
-        if (newCount > 0) {
-            this.averageRating = BigDecimal.valueOf(newTotal)
-                    .divide(BigDecimal.valueOf(newCount), 2, RoundingMode.HALF_UP);
-        } else {
-            this.averageRating = BigDecimal.ZERO;
-        }
+        this.averageRating = newCount > 0
+                ? BigDecimal.valueOf(newTotal).divide(BigDecimal.valueOf(newCount), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
     }
 }

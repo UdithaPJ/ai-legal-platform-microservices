@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 const GW = process.env.API_GATEWAY_URL ?? "http://localhost:8080";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

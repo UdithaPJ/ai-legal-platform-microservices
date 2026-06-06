@@ -1,6 +1,7 @@
 package com.project.lawyerprofileservice.dto;
 
 import com.project.lawyerprofileservice.model.Specialization;
+import com.project.lawyerprofileservice.model.VerificationStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,29 +14,23 @@ import java.util.UUID;
 @Builder
 public class LawyerResponseDTO {
 
-    private Long id;
-
-    private UUID userId;
-
+    private Long   id;
+    private UUID   userId;
     private String barRegistrationNumber;
 
     private List<Specialization> specializations;
 
-    private Integer yearsOfExperience;
-
-    private String bio;
-
+    private Integer    yearsOfExperience;
+    private String     bio;
     private BigDecimal consultationFee;
+    private String     location;
+    private Boolean    isAvailable;
 
-    private String location;
+    /** Current onboarding / verification lifecycle state. */
+    private VerificationStatus verificationStatus;
 
-    private Boolean isAvailable;
-
-    private BigDecimal averageRating;
-
-    private Integer reviewCount;
-
+    private BigDecimal   averageRating;
+    private Integer      reviewCount;
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 }

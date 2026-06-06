@@ -1,58 +1,112 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, DollarSign, Calendar, Clock, Video, MessageSquare, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  DollarSign,
+  MapPin,
+  MessageSquare,
+  Star,
+  Video,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppointmentStatusBadge } from "@/components/appointments/AppointmentStatusBadge";
+import { apiFetch } from "@/lib/api-client";
+import { formatCurrency, formatDateOnly, formatSpecialization, formatTimeOnly, getInitials } from "@/lib/display";
+import type { AppointmentResponseDTO } from "@/types/appointment";
+import type { LawyerResponseDTO } from "@/types/lawyer";
 
-type AppointmentStatus =
-  | "REQUESTED"
-  | "ACCEPTED"
-  | "REJECTED"
-  | "CONFIRMED"
-  | "SCHEDULED"
-  | "VIDEO_REQUESTED"
-  | "COMPLETED"
-  | "CANCELLED";
+export default function ClientAppointmentDetailPage() {
+  const params = useParams<{ id: string }>();
+  const { data: session } = useSession();
 
-const appointments: Record<string, {
-  id: string; lawyer: string; specialization: string; matter: string;
-  description: string; status: AppointmentStatus; date: string; time: string;
-  fee: number; location: string; notes?: string;
-}> = {
-  "appt-1": {
-    id: "appt-1", lawyer: "Sarah Mitchell", specialization: "Corporate Law",
-    matter: "Startup acquisition contract", description: "Need help reviewing an acquisition agreement with a non-compete clause.",
-    status: "SCHEDULED", date: "June 2, 2026", time: "10:00 AM", fee: 250,
-    location: "New York, NY", notes: "Please bring a copy of the contract and any prior correspondence.",
-  },
-  "appt-2": {
-    id: "appt-2", lawyer: "James Okafor", specialization: "Criminal Law",
-    matter: "Criminal defence consultation", description: "Initial consultation for a white-collar fraud charge.",
-    status: "REQUESTED", date: "Pending confirmation", time: "—", fee: 300,
-    location: "Los Angeles, CA",
-  },
-  "appt-3": {
-    id: "appt-3", lawyer: "Michael Torres", specialization: "Intellectual Property",
-    matter: "Patent filing review", description: "Review of provisional patent application for a SaaS product.",
-    status: "COMPLETED", date: "May 10, 2026", time: "2:00 PM", fee: 350,
-    location: "San Francisco, CA",
-  },
-};
+  const [appointment, setAppointment] = useState<AppointmentResponseDTO | null>(null);
+  const [lawyer, setLawyer] = useState<LawyerResponseDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const statusConfig: Record<AppointmentStatus, { label: string; color: string }> = {
-  REQUESTED: { label: "Pending Review", color: "bg-amber-100 text-amber-700" },
-  ACCEPTED: { label: "Accepted", color: "bg-blue-100 text-blue-700" },
-  REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700" },
-  CONFIRMED: { label: "Confirmed", color: "bg-green-100 text-green-700" },
-  SCHEDULED: { label: "Scheduled", color: "bg-green-100 text-green-700" },
-  VIDEO_REQUESTED: { label: "Video Requested", color: "bg-purple-100 text-purple-700" },
-  COMPLETED: { label: "Completed", color: "bg-gray-100 text-gray-600" },
-  CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-400" },
-};
+  useEffect(() => {
+    if (!params.id) return;
 
-export default async function ClientAppointmentDetailPage(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params;
-  const appt = appointments[id] ?? appointments["appt-1"];
-  const { label, color } = statusConfig[appt.status];
-  const initials = appt.lawyer.split(" ").map((n) => n[0]).join("");
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const appointmentData = await apiFetch<AppointmentResponseDTO>(`/appointments/${params.id}`);
+        const lawyerData = await apiFetch<LawyerResponseDTO>(`/lawyers/user/${appointmentData.lawyerId}`).catch(() => null);
+
+        if (!cancelled) {
+          setAppointment(appointmentData);
+          setLawyer(lawyerData);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load appointment.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
+
+  async function requestVideoCall() {
+    if (!appointment) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await apiFetch<AppointmentResponseDTO>(`/appointments/${appointment.id}/video-request`, {
+        method: "POST",
+      });
+      setAppointment(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to request video call.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function cancelAppointment() {
+    if (!appointment || !session?.user.sub) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await apiFetch<AppointmentResponseDTO>(
+        `/appointments/${appointment.id}/cancel?clientId=${session.user.sub}`,
+        { method: "PATCH" }
+      );
+      setAppointment(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel appointment.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="rounded-xl border bg-white px-4 py-8 text-center text-sm text-gray-500">Loading appointment...</div>;
+  }
+
+  if (error || !appointment) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-700">
+        {error ?? "Could not load this appointment."}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -61,102 +115,121 @@ export default async function ClientAppointmentDetailPage(props: { params: Promi
           <ArrowLeft className="size-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{appt.matter}</h1>
-          <p className="text-sm text-gray-500">Appointment #{appt.id}</p>
+          <h1 className="text-xl font-bold text-gray-900">Consultation with {appointment.lawyerName}</h1>
+          <p className="text-sm text-gray-500">Appointment #{appointment.id}</p>
         </div>
-        <span className={`ml-auto rounded-full px-3 py-1 text-xs font-medium ${color}`}>{label}</span>
+        <div className="ml-auto">
+          <AppointmentStatusBadge status={appointment.status} />
+        </div>
       </div>
 
-      {/* Lawyer info */}
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-start gap-4">
             <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-700">
-              {initials}
+              {getInitials(appointment.lawyerName)}
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold text-gray-900">{appt.lawyer}</h2>
-              <span className="inline-block mt-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                {appt.specialization}
-              </span>
+              <h2 className="font-semibold text-gray-900">{appointment.lawyerName}</h2>
+              {lawyer?.specializations?.length ? (
+                <span className="mt-1 inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                  {formatSpecialization(lawyer.specializations[0])}
+                </span>
+              ) : null}
               <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1.5"><MapPin className="size-3.5" />{appt.location}</span>
-                <span className="flex items-center gap-1.5"><DollarSign className="size-3.5" />${appt.fee}/hr</span>
+                {lawyer?.location ? (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="size-3.5" />
+                    {lawyer.location}
+                  </span>
+                ) : null}
+                <span className="flex items-center gap-1.5">
+                  <DollarSign className="size-3.5" />
+                  {formatCurrency(appointment.consultationFee)}/hr
+                </span>
               </div>
             </div>
-            <Link
-              href={`/client/lawyers/1`}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              View profile
-            </Link>
+            {lawyer ? (
+              <Link href={`/client/lawyers/${lawyer.id}`} className="text-sm text-blue-600 hover:underline">
+                View profile
+              </Link>
+            ) : null}
           </div>
         </CardContent>
       </Card>
 
-      {/* Appointment details */}
       <Card>
-        <CardHeader><CardTitle>Appointment Details</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Appointment Details</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="size-4 text-gray-400" />
               <div>
                 <p className="text-xs text-gray-400">Date</p>
-                <p className="font-medium text-gray-800">{appt.date}</p>
+                <p className="font-medium text-gray-800">{formatDateOnly(appointment.appointmentDateTime)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Clock className="size-4 text-gray-400" />
               <div>
                 <p className="text-xs text-gray-400">Time</p>
-                <p className="font-medium text-gray-800">{appt.time}</p>
+                <p className="font-medium text-gray-800">{formatTimeOnly(appointment.appointmentDateTime)}</p>
               </div>
             </div>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">Matter</p>
-            <p className="text-sm font-medium text-gray-800">{appt.matter}</p>
+            <p className="mb-1 text-xs text-gray-400">Description</p>
+            <p className="text-sm text-gray-700">{appointment.description}</p>
           </div>
-          <div>
-            <p className="text-xs text-gray-400 mb-1">Description</p>
-            <p className="text-sm text-gray-700">{appt.description}</p>
-          </div>
-          {appt.notes && (
-            <div className="rounded-lg bg-amber-50 border border-amber-100 p-3">
-              <p className="text-xs font-medium text-amber-700 mb-1">Lawyer's Notes</p>
-              <p className="text-sm text-amber-800">{appt.notes}</p>
+          {appointment.lawyerNote ? (
+            <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+              <p className="mb-1 text-xs font-medium text-amber-700">Lawyer&apos;s Notes</p>
+              <p className="text-sm text-amber-800">{appointment.lawyerNote}</p>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 
-      {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        {(appt.status === "SCHEDULED" || appt.status === "VIDEO_REQUESTED") && (
+        {(appointment.status === "SCHEDULED" || appointment.status === "VIDEO_REQUESTED") && (
           <Link
-            href={`/client/video/${appt.id}`}
+            href={`/client/video/${appointment.id}`}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
           >
             <Video className="size-4" /> Join Video Session
           </Link>
         )}
+        {appointment.status === "ACCEPTED" && (
+          <button
+            onClick={() => void requestVideoCall()}
+            disabled={submitting}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Video className="size-4" /> {submitting ? "Requesting..." : "Request Video Session"}
+          </button>
+        )}
         <Link
-          href="/client/conversations/conv-1"
+          href="/client/conversations"
           className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           <MessageSquare className="size-4" /> Message Lawyer
         </Link>
-        {appt.status === "COMPLETED" && (
+        {appointment.status === "COMPLETED" && (
           <Link
-            href={`/client/appointments/${id}/review`}
+            href={`/client/appointments/${appointment.id}/review`}
             className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100"
           >
             <Star className="size-4" /> Leave a Review
           </Link>
         )}
-        {(appt.status === "REQUESTED" || appt.status === "ACCEPTED") && (
-          <button className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
+        {(appointment.status === "REQUESTED" || appointment.status === "ACCEPTED") && (
+          <button
+            onClick={() => void cancelAppointment()}
+            disabled={submitting}
+            className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
             Cancel Appointment
           </button>
         )}

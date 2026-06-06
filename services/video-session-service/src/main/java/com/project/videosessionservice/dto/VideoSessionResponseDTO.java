@@ -19,4 +19,7 @@ public class VideoSessionResponseDTO {
     private LocalDateTime endedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /** Short-lived JaaS JWT — moderator=true for lawyer, false for client. */
+    private String jitsiToken;
 }

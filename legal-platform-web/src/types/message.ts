@@ -19,11 +19,8 @@ export interface Conversation {
 }
 
 export interface SendMessageRequest {
-  conversationId: string;
-  content: string;
-}
-
-export interface ChatMessageRequest {
-  conversationId: string;
+  clientId: string;
+  lawyerId: string;
+  appointmentId: number;
   content: string;
 }

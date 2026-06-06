@@ -1,26 +1,96 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { CalendarDays, MessageSquare, FileSearch, Users, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stats = [
-  { label: "Active Appointments", value: "3", icon: CalendarDays, href: "/client/appointments" },
-  { label: "Unread Messages", value: "5", icon: MessageSquare, href: "/client/conversations" },
-  { label: "Documents Analysed", value: "2", icon: FileSearch, href: "/client/analysis" },
-];
-
-const recentActivity = [
-  { text: "Appointment with Sarah Mitchell accepted", time: "2h ago", dot: "bg-green-500" },
-  { text: "New message from James Okafor", time: "4h ago", dot: "bg-blue-500" },
-  { text: "Document analysis completed", time: "Yesterday", dot: "bg-violet-500" },
-  { text: "Appointment request submitted", time: "2 days ago", dot: "bg-gray-400" },
-];
+import { apiFetch } from "@/lib/api-client";
+import { formatRelativeTimestamp } from "@/lib/display";
+import type { AppointmentResponseDTO } from "@/types/appointment";
+import type { Conversation } from "@/types/message";
 
 export default function ClientDashboardPage() {
+  const { data: session, status } = useSession();
+
+  const [appointments, setAppointments] = useState<AppointmentResponseDTO[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session.user.sub) return;
+
+    (async () => {
+      try {
+        const [appointmentsData, conversationsData] = await Promise.all([
+          apiFetch<AppointmentResponseDTO[]>(`/appointments/client/${session.user.sub}`).catch(
+            () => [] as AppointmentResponseDTO[]
+          ),
+          apiFetch<Conversation[]>("/messages/conversations/me").catch(() => [] as Conversation[]),
+        ]);
+        setAppointments(appointmentsData);
+        setConversations(conversationsData);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [session?.user.sub, status]);
+
+  const activeAppointments = appointments.filter((a) =>
+    ["REQUESTED", "ACCEPTED", "SCHEDULED", "VIDEO_REQUESTED", "CONFIRMED"].includes(a.status)
+  );
+
+  const recentActivity = appointments
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 4)
+    .map((a) => ({
+      text: `Appointment with ${a.lawyerName} — ${a.status.replaceAll("_", " ").toLowerCase()}`,
+      time: formatRelativeTimestamp(a.updatedAt),
+      dot:
+        a.status === "ACCEPTED" || a.status === "SCHEDULED"
+          ? "bg-green-500"
+          : a.status === "REQUESTED"
+            ? "bg-blue-500"
+            : a.status === "COMPLETED"
+              ? "bg-violet-500"
+              : "bg-gray-400",
+    }));
+
+  const stats = [
+    {
+      label: "Active Appointments",
+      value: loading ? "—" : activeAppointments.length.toString(),
+      icon: CalendarDays,
+      href: "/client/appointments",
+    },
+    {
+      label: "Conversations",
+      value: loading ? "—" : conversations.length.toString(),
+      icon: MessageSquare,
+      href: "/client/conversations",
+    },
+    {
+      label: "Documents",
+      value: "—",
+      icon: FileSearch,
+      href: "/client/analysis",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
-        <p className="text-sm text-gray-500">Here&apos;s what&apos;s happening with your legal matters.</p>
+        <h2 className="text-xl font-semibold text-gray-900">
+          Welcome back{session?.user?.name ? `, ${session.user.name.split(" ")[0]}` : ""}
+        </h2>
+        <p className="text-sm text-gray-500">
+          {loading
+            ? "Loading your legal matters..."
+            : activeAppointments.length > 0
+              ? `You have ${activeAppointments.length} active appointment${activeAppointments.length !== 1 ? "s" : ""}.`
+              : "Here's what's happening with your legal matters."}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -43,7 +113,9 @@ export default function ClientDashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-1">
             {[
               { label: "Find a Lawyer", href: "/client/lawyers", icon: Users },
@@ -67,17 +139,25 @@ export default function ClientDashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivity.map(({ text, time, dot }) => (
-              <div key={text} className="flex items-start gap-3">
-                <span className={`mt-1.5 size-2 shrink-0 rounded-full ${dot}`} />
-                <div>
-                  <p className="text-sm text-gray-700">{text}</p>
-                  <p className="text-xs text-gray-400">{time}</p>
+            {loading ? (
+              <p className="text-sm text-gray-400">Loading activity...</p>
+            ) : recentActivity.length === 0 ? (
+              <p className="text-sm text-gray-400">No recent activity. Book an appointment to get started.</p>
+            ) : (
+              recentActivity.map(({ text, time, dot }, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className={`mt-1.5 size-2 shrink-0 rounded-full ${dot}`} />
+                  <div>
+                    <p className="text-sm text-gray-700">{text}</p>
+                    <p className="text-xs text-gray-400">{time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,42 @@
 version: "3.9"
 
+# ══════════════════════════════════════════════════════════════════════════════
+# AI Legal Platform — full local stack
+#
+# Start everything:   docker compose up -d
+# Rebuild a service:  docker compose up -d --build <service-name>
+# View logs:          docker compose logs -f <service-name>
+#
+# First-time Ollama model pull (run once after `docker compose up -d`):
+#   docker exec ollama ollama pull nomic-embed-text
+#   docker exec ollama ollama pull phi3:mini
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Shared environment snippets (YAML anchors) ─────────────────────────────
+x-spring-common: &spring-common
+  SPRING_CLOUD_CONSUL_HOST: consul
+  SPRING_CLOUD_CONSUL_PORT: 8500
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  # JWKS is fetched from Keycloak's internal Docker hostname (key material only,
+  # not used for issuer validation — trusted-issuers list handles that).
+  KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/legal-platform/protocol/openid-connect/certs
+
+x-spring-db: &spring-db
+  SPRING_DATASOURCE_USERNAME: postgres
+  SPRING_DATASOURCE_PASSWORD: password
+
+x-spring-healthcheck: &spring-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 5
+  start_period: 90s
+
 services:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # INFRASTRUCTURE
+  # ════════════════════════════════════════════════════════════════════════════
+
   postgres:
     image: pgvector/pgvector:pg16
     container_name: postgres
@@ -9,19 +45,19 @@ services:
       POSTGRES_PASSWORD: password
     ports:
       - "5433:5432"
-
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 3s
       retries: 20
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d
 
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.1
+    build:
+      context: ../keycloak-role-assignment-spi
+      dockerfile: Dockerfile
     container_name: keycloak
     command:
       - start-dev
@@ -33,12 +69,33 @@ services:
       KC_DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_USER_EVENTS_TOPIC: user.events.v1
+      # Dev: tokens issued with iss=http://localhost:8181/realms/legal-platform
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8181
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
     ports:
       - "8181:8080"
     volumes:
       - ./keycloak/realms:/opt/keycloak/data/import
+      - ./keycloak/keycloak-theme-for-kc-26.jar:/opt/keycloak/providers/keycloak-theme.jar
+    healthcheck:
+      # No curl in the UBI9 minimal image — use bash /dev/tcp to make a raw HTTP request.
+      # Opens a TCP connection to port 8080, sends a minimal GET, and checks the status line.
+      test: ["CMD", "bash", "-c",
+             "exec 3<>/dev/tcp/localhost/8080 && \
+              printf 'GET /realms/master HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && \
+              head -1 <&3 | grep -q 200"]
+      interval: 15s
+      timeout: 10s
+      retries: 25          # 25 × 15s = 375s of retries
+      start_period: 60s
     depends_on:
       postgres:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   consul:
@@ -47,6 +104,11 @@ services:
     ports:
       - "8500:8500"
     command: "agent -dev -client=0.0.0.0"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8500/v1/status/leader || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.7.0
@@ -61,8 +123,8 @@ services:
     image: confluentinc/cp-kafka:7.7.0
     container_name: kafka
     ports:
-      - "9092:9092"   # internal/docker listener
-      - "29092:29092" # host listener
+      - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -83,5 +145,225 @@ services:
       zookeeper:
         condition: service_started
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # GPU support (uncomment if you have an NVIDIA GPU):
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SPRING MICROSERVICES
+  # ════════════════════════════════════════════════════════════════════════════
+
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *spring-common
+      SPRING_CLOUD_CONSUL_HOST: consul
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      consul:
+        condition: service_healthy
+      keycloak:
+        condition: service_started   # JwtDecoder is lazy — JWKS fetched on first request, not at boot
+
+  user-service:
+    build:
+      context: ../services/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      <<: [*spring-common, *spring-db]
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_service_db
+      FILE_UPLOAD_DIR: /app/uploads/profile-pictures/
+    volumes:
+      - user_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  lawyer-service:
+    build:
+      context: ../services/lawyer-profile-service
+      dockerfile: Dockerfile
+    container_name: lawyer-service
+    ports:
+      - "8082:8082"
+    environment:
+      <<: [*spring-common, *spring-db]
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lawyerdb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  appointment-service:
+    build:
+      context: ../services/appointment-service
+      dockerfile: Dockerfile
+    container_name: appointment-service
+    ports:
+      - "8083:8083"
+    environment:
+      <<: [*spring-common, *spring-db]
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/appointmentdb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      user-service:
+        condition: service_started   # Feign calls happen at request time, not at boot
+      lawyer-service:
+        condition: service_started   # Feign calls happen at request time, not at boot
+
+  messaging-service:
+    build:
+      context: ../services/messaging-service
+      dockerfile: Dockerfile
+    container_name: messaging-service
+    ports:
+      - "8084:8084"
+    environment:
+      <<: [*spring-common, *spring-db]
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/messaging_db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_started   # JwtDecoder is lazy — JWKS fetched on first request, not at boot
+
+  review-rating-service:
+    build:
+      context: ../services/review-rating-service
+      dockerfile: Dockerfile
+    container_name: review-rating-service
+    ports:
+      - "8085:8085"
+    environment:
+      <<: [*spring-common, *spring-db]
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/review_db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  video-session-service:
+    build:
+      context: ../services/video-session-service
+      dockerfile: Dockerfile
+    container_name: video-session-service
+    ports:
+      - "8086:8086"
+    environment:
+      <<: [*spring-common, *spring-db]
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/video_session_db
+      JAAS_PRIVATE_KEY_PATH: /etc/jaas/jaas-private-key.pk
+    volumes:
+      # JaaS RSA private key — file is git-ignored, see infrastructure/jaas/README.md
+      - ./jaas:/etc/jaas:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
+      <<: *spring-healthcheck
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # FASTAPI SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  ai-analysis-service:
+    build:
+      context: ../services/ai-analysis-service
+      dockerfile: Dockerfile
+    container_name: ai-analysis-service
+    ports:
+      - "8087:8087"
+    environment:
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/ai_analysis_db
+      UPLOAD_DIR: /app/uploads
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - analysis_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8087/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
 volumes:
   postgres_data:
+  user_uploads:
+  analysis_uploads:
+  ollama_data:

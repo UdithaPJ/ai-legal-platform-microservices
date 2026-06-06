@@ -2,14 +2,7 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
-      <profile default="true" name="Default" enabled="true" />
-      <profile name="Maven default annotation processors profile" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <module name="api-gateway" />
-      </profile>
-      <profile name="Annotation profile for video-session-service" enabled="true">
+      <profile name="Annotation profile for lawyer-profile-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -19,9 +12,16 @@
         <module name="messaging-service" />
         <module name="user-service" />
         <module name="appointment-service" />
+        <module name="lawyer-profile-service" />
         <module name="video-session-service" />
         <module name="review-rating-service" />
-        <module name="lawyer-profile-service" />
+      </profile>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="api-gateway" />
+        <module name="keycloak-role-assignment-spi" />
       </profile>
     </annotationProcessing>
   </component>

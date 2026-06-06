@@ -1,17 +1,23 @@
 export type DocumentStatus = "pending" | "processing" | "completed" | "failed";
 
+export interface RiskyClause {
+  clause?: string;
+  risk_level?: "HIGH" | "MEDIUM" | "LOW";
+  explanation?: string;
+  recommendation?: string;
+}
+
 export interface AnalysisResult {
-  summary: string;
-  risky_clauses: string[];
-  simplified_explanation: string;
+  summary?: string | null;
+  risky_clauses?: RiskyClause[] | null;
+  simplified_explanation?: string | null;
 }
 
 export interface DocumentStatusResponse {
   id: string;
   filename: string;
   status: DocumentStatus;
-  user_id?: string;
-  analysis?: AnalysisResult;
+  analysis?: AnalysisResult | null;
   created_at: string;
 }
 
@@ -19,5 +25,5 @@ export interface DocumentUploadResponse {
   id: string;
   status: DocumentStatus;
   filename: string;
-  user_id?: string;
+  created_at: string;
 }

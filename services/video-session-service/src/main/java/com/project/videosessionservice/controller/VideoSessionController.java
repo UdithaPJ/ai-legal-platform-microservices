@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -36,14 +37,24 @@ public class VideoSessionController {
 
     @GetMapping("/appointment/{appointmentId}")
     public ResponseEntity<VideoSessionResponseDTO> getByAppointmentId(
-            @PathVariable Long appointmentId) {
-        return ResponseEntity.ok(videoSessionService.getByAppointmentId(appointmentId));
+            @PathVariable Long appointmentId,
+            @RequestParam(name = "moderator", defaultValue = "false") boolean moderator,
+            @RequestParam(name = "displayName", defaultValue = "Participant") String displayName,
+            @RequestParam(name = "userId", defaultValue = "anonymous") String userId,
+            @RequestParam(name = "email", required = false) String email) {
+        return ResponseEntity.ok(videoSessionService.getByAppointmentId(
+                appointmentId, moderator, userId, displayName, email));
     }
 
     @PostMapping("/appointment/{appointmentId}/join")
     public ResponseEntity<VideoSessionResponseDTO> joinSession(
-            @PathVariable Long appointmentId) {
-        return ResponseEntity.ok(videoSessionService.joinSession(appointmentId));
+            @PathVariable Long appointmentId,
+            @RequestParam(name = "moderator", defaultValue = "false") boolean moderator,
+            @RequestParam(name = "displayName", defaultValue = "Participant") String displayName,
+            @RequestParam(name = "userId", defaultValue = "anonymous") String userId,
+            @RequestParam(name = "email", required = false) String email) {
+        return ResponseEntity.ok(videoSessionService.joinSession(
+                appointmentId, moderator, userId, displayName, email));
     }
 
     @PostMapping("/appointment/{appointmentId}/end")

@@ -56,11 +56,18 @@ feign:
   circuitbreaker:
     enabled: false
 
-# Jitsi configuration
-# Using the public Jitsi Meet instance — no account or API key needed.
-# For production, replace with your own self-hosted Jitsi server URL.
+# Jitsi-as-a-Service (8x8 JaaS) — signed JWT moderation, no port forwarding needed.
 jitsi:
-  base-url: https://meet.jit.si
+  base-url: ${JITSI_BASE_URL:https://8x8.vc}
+
+jaas:
+  # App ID from https://jaas.8x8.vc/#/start  (vpaas-magic-cookie-xxx)
+  app-id: ${JAAS_APP_ID:vpaas-magic-cookie-d2e3d58cae2844fa9d316475c260d16d}
+  # Full Key ID from the API Keys page  (appId/keyId)
+  kid: ${JAAS_KID:vpaas-magic-cookie-d2e3d58cae2844fa9d316475c260d16d/02e30b}
+  # Absolute path to the PEM private key file inside the container/JVM
+  private-key-path: ${JAAS_PRIVATE_KEY_PATH:/etc/jaas/jaas-private-key.pk}
+  ttl-seconds: 14400
 
 management:
   endpoints:

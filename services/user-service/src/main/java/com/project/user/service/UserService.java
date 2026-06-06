@@ -15,6 +15,8 @@ public interface UserService {
 
 	UserResponse getUser(UUID id);
 
+	UserResponse getUserByKeycloakId(String keycloakId);
+
 	List<UserResponse> getAllUsers();
 
 	UserResponse updateUser(UUID id, UpdateUserRequest request);

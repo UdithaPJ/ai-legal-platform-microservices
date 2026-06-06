@@ -24,9 +24,15 @@ public class VideoSessionService {
 
     private final VideoSessionRepository videoSessionRepository;
     private final WorkflowEventPublisher workflowEventPublisher;
+    private final JaaSTokenService jaaSTokenService;
 
+    /** e.g. https://8x8.vc */
     @Value("${jitsi.base-url}")
     private String jitsiBaseUrl;
+
+    /** JaaS app id — prefixed into the meeting URL as /<appId>/<room> */
+    @Value("${jaas.app-id}")
+    private String appId;
 
     public VideoSessionResponseDTO createSession(
             Long appointmentId,
@@ -39,7 +45,8 @@ public class VideoSessionService {
 
         String roomName = "legal-" + appointmentId + "-"
                 + UUID.randomUUID().toString().substring(0, 8);
-        String meetingUrl = jitsiBaseUrl + "/" + roomName;
+        // 8x8 JaaS requires the appId as a path segment: https://8x8.vc/<appId>/<room>
+        String meetingUrl = jitsiBaseUrl + "/" + appId + "/" + roomName;
 
         VideoSession session = VideoSession.builder()
                 .appointmentId(appointmentId)
@@ -53,21 +60,25 @@ public class VideoSessionService {
         log.info("Video session created for appointmentId: {} with room: {}",
                 appointmentId, roomName);
 
-        return mapToResponse(saved);
+        return mapToResponse(saved, null);
     }
 
     public VideoSessionResponseDTO getById(Long id) {
-        return mapToResponse(findById(id));
+        return mapToResponse(findById(id), null);
     }
 
-    public VideoSessionResponseDTO getByAppointmentId(Long appointmentId) {
+    public VideoSessionResponseDTO getByAppointmentId(
+            Long appointmentId, boolean moderator, String userId, String displayName, String email) {
         VideoSession session = videoSessionRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No video session found for appointmentId: " + appointmentId));
-        return mapToResponse(session);
+        String token = jaaSTokenService.signToken(
+                session.getRoomName(), userId, displayName, email, moderator);
+        return mapToResponse(session, token);
     }
 
-    public VideoSessionResponseDTO joinSession(Long appointmentId) {
+    public VideoSessionResponseDTO joinSession(
+            Long appointmentId, boolean moderator, String userId, String displayName, String email) {
         VideoSession session = findByAppointmentId(appointmentId);
 
         if (session.getStatus() == SessionStatus.ENDED) {
@@ -81,7 +92,9 @@ public class VideoSessionService {
             log.info("Video session ACTIVE for appointmentId: {}", appointmentId);
         }
 
-        return mapToResponse(session);
+        String token = jaaSTokenService.signToken(
+                session.getRoomName(), userId, displayName, email, moderator);
+        return mapToResponse(session, token);
     }
 
     public VideoSessionResponseDTO endSession(Long appointmentId) {
@@ -108,7 +121,7 @@ public class VideoSessionService {
                 OffsetDateTime.now()
         ));
 
-        return mapToResponse(updated);
+        return mapToResponse(updated, null);
     }
 
     private VideoSession findById(Long id) {
@@ -123,7 +136,7 @@ public class VideoSessionService {
                         "No video session found for appointmentId: " + appointmentId));
     }
 
-    private VideoSessionResponseDTO mapToResponse(VideoSession session) {
+    private VideoSessionResponseDTO mapToResponse(VideoSession session, String jitsiToken) {
         return VideoSessionResponseDTO.builder()
                 .id(session.getId())
                 .appointmentId(session.getAppointmentId())
@@ -135,6 +148,7 @@ public class VideoSessionService {
                 .endedAt(session.getEndedAt())
                 .createdAt(session.getCreatedAt())
                 .updatedAt(session.getUpdatedAt())
+                .jitsiToken(jitsiToken)
                 .build();
     }
 }

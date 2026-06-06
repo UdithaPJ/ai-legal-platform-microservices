@@ -50,6 +50,8 @@ app:
     topics:
       reviewEvents: review.events.v1
       reviewEventsDlq: review.events.v1.dlq
+      userEvents: user.events.v1
+      userEventsDlq: user.events.v1.dlq
 
 management:
   endpoints:

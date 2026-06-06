@@ -15,14 +15,17 @@ const pageTitles: Record<string, string> = {
   "/lawyer/appointments": "Appointments",
   "/lawyer/conversations": "Messages",
   "/admin/dashboard": "Dashboard",
-  "/admin/users": "User Management",
-  "/admin/reviews": "Review Moderation",
+  "/admin/lawyers":   "Lawyer Verification",
+  "/admin/users":     "User Management",
+  "/admin/reviews":   "Review Moderation",
+  "/client/profile": "My Profile",
 };
 
 function getTitle(pathname: string): string {
   if (pageTitles[pathname]) return pageTitles[pathname];
   if (pathname.startsWith("/client/lawyers/")) return "Lawyer Profile";
   if (pathname.startsWith("/client/appointments/new")) return "Book Appointment";
+  if (pathname.endsWith("/review")) return "Leave a Review";
   if (pathname.startsWith("/client/appointments/")) return "Appointment Detail";
   if (pathname.startsWith("/client/conversations/")) return "Chat";
   if (pathname.startsWith("/client/analysis/")) return "Analysis Results";
@@ -30,7 +33,8 @@ function getTitle(pathname: string): string {
   if (pathname.startsWith("/lawyer/appointments/")) return "Appointment Detail";
   if (pathname.startsWith("/lawyer/conversations/")) return "Chat";
   if (pathname.startsWith("/lawyer/video/")) return "Video Session";
-  if (pathname.startsWith("/admin/users/")) return "User Detail";
+  if (pathname.startsWith("/admin/lawyers/")) return "Lawyer Review";
+  if (pathname.startsWith("/admin/users/"))  return "User Detail";
   return "Legal Platform";
 }
 

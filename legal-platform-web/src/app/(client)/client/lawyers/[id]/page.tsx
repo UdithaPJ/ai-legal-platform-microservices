@@ -1,29 +1,78 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { MapPin, DollarSign, Star, ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, DollarSign, MapPin, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiFetch } from "@/lib/api-client";
+import { formatCurrency, formatSpecialization, toAvatarUrl } from "@/lib/display";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import type { LawyerResponseDTO } from "@/types/lawyer";
+import type { LawyerRatingSummaryDTO, ReviewResponseDTO } from "@/types/review";
+import type { UserResponse } from "@/types/user";
 
-const lawyers: Record<string, {
-  name: string; specializations: string[]; location: string; fee: number;
-  rating: number; reviews: number; experience: number; bio: string; available: boolean;
-}> = {
-  "1": { name: "Sarah Mitchell", specializations: ["Corporate Law", "Employment Law"], location: "New York, NY", fee: 250, rating: 4.9, reviews: 87, experience: 15, available: true, bio: "I am a corporate attorney with 15 years of experience advising startups and Fortune 500 clients on transactional and employment matters. Prior to private practice, I served as in-house counsel at two publicly traded companies. I pride myself on clear communication and practical advice." },
-  "2": { name: "James Okafor", specializations: ["Criminal Law"], location: "Los Angeles, CA", fee: 300, rating: 4.8, reviews: 134, experience: 18, available: true, bio: "Former prosecutor turned defence attorney. I have tried over 200 jury trials and specialize in complex criminal matters including white-collar crime and serious violent offences. I believe every client deserves a rigorous, fearless defence." },
-  "4": { name: "Michael Torres", specializations: ["Intellectual Property"], location: "San Francisco, CA", fee: 350, rating: 4.9, reviews: 51, experience: 12, available: true, bio: "Patent attorney and former software engineer. I help tech founders and companies protect their innovations, negotiate licensing deals, and defend against IP infringement." },
-  "5": { name: "Aisha Patel", specializations: ["Real Estate Law"], location: "Miami, FL", fee: 220, rating: 4.6, reviews: 38, experience: 9, available: true, bio: "Focused exclusively on real estate law, I handle residential and commercial transactions, lease negotiations, and landlord-tenant disputes across Florida." },
-};
+export default function LawyerProfilePage() {
+  const params = useParams<{ id: string }>();
 
-const reviewsList = [
-  { author: "Client A", rating: 5, comment: "Exceptional service, very responsive and knowledgeable.", date: "May 2026" },
-  { author: "Client B", rating: 5, comment: "Resolved my issue efficiently and kept me informed every step.", date: "Apr 2026" },
-  { author: "Client C", rating: 4, comment: "Great expertise. Would use again.", date: "Mar 2026" },
-];
+  const [lawyer, setLawyer] = useState<LawyerResponseDTO | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [reviews, setReviews] = useState<ReviewResponseDTO[]>([]);
+  const [summary, setSummary] = useState<LawyerRatingSummaryDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function LawyerProfilePage(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params;
-  const lawyer = lawyers[id] ?? {
-    name: "Lawyer", specializations: [], location: "—", fee: 0,
-    rating: 0, reviews: 0, experience: 0, bio: "Profile not found.", available: false,
-  };
+  useEffect(() => {
+    if (!params.id) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const lawyerData = await apiFetch<LawyerResponseDTO>(`/lawyers/${params.id}`);
+        const [userData, reviewsData, summaryData] = await Promise.all([
+          apiFetch<UserResponse>(`/users/${lawyerData.userId}`).catch(() => null),
+          apiFetch<ReviewResponseDTO[]>(`/reviews/lawyer/${lawyerData.userId}`).catch(() => []),
+          apiFetch<LawyerRatingSummaryDTO>(`/reviews/lawyer/${lawyerData.userId}/summary`).catch(() => null),
+        ]);
+
+        if (!cancelled) {
+          setLawyer(lawyerData);
+          setUser(userData);
+          setReviews(reviewsData);
+          setSummary(summaryData);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load lawyer profile.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
+
+  if (loading) {
+    return <div className="rounded-xl border bg-white px-4 py-8 text-center text-sm text-gray-500">Loading lawyer profile...</div>;
+  }
+
+  if (error || !lawyer) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-700">
+        {error ?? "Could not load this lawyer profile."}
+      </div>
+    );
+  }
+
+  const fullName = user?.fullName ?? "Lawyer";
 
   return (
     <div className="space-y-6">
@@ -31,40 +80,59 @@ export default async function LawyerProfilePage(props: { params: Promise<{ id: s
         <ArrowLeft className="size-4" /> Back to lawyers
       </Link>
 
-      {/* Header card */}
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xl font-bold text-blue-700">
-                {lawyer.name.split(" ").map((n) => n[0]).join("")}
-              </div>
+              <UserAvatar
+                name={fullName}
+                photoUrl={toAvatarUrl(user?.profilePictureUrl)}
+                size="xl"
+              />
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{lawyer.name}</h2>
+                <h2 className="text-xl font-bold text-gray-900">{fullName}</h2>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {lawyer.specializations.map((s) => (
-                    <span key={s} className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">{s}</span>
+                  {lawyer.specializations.map((specialization) => (
+                    <span key={specialization} className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      {formatSpecialization(specialization)}
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
-            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${lawyer.available ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-              {lawyer.available ? "Available" : "Unavailable"}
+            <span
+              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                lawyer.isAvailable ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {lawyer.isAvailable ? "Available" : "Unavailable"}
             </span>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-5 text-sm text-gray-500">
-            <div className="flex items-center gap-1.5"><MapPin className="size-4" />{lawyer.location}</div>
-            <div className="flex items-center gap-1.5"><DollarSign className="size-4" />${lawyer.fee}/hr</div>
-            <div className="flex items-center gap-1.5"><Clock className="size-4" />{lawyer.experience} yrs experience</div>
-            <div className="flex items-center gap-1.5"><Star className="size-4 fill-amber-400 text-amber-400" />{lawyer.rating} ({lawyer.reviews} reviews)</div>
+            <div className="flex items-center gap-1.5">
+              <MapPin className="size-4" />
+              {lawyer.location}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="size-4" />
+              {formatCurrency(lawyer.consultationFee)}/hr
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="size-4" />
+              {lawyer.yearsOfExperience} yrs experience
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Star className="size-4 fill-amber-400 text-amber-400" />
+              {summary?.averageRating ?? lawyer.averageRating ?? 0} ({summary?.totalReviews ?? lawyer.reviewCount} reviews)
+            </div>
           </div>
 
           <p className="mt-4 text-sm leading-relaxed text-gray-600">{lawyer.bio}</p>
 
-          {lawyer.available && (
+          {lawyer.isAvailable && (
             <Link
-              href={`/client/appointments/new?lawyerId=${id}`}
+              href={`/client/appointments/new?lawyerId=${lawyer.userId}`}
               className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
             >
               Book a Consultation
@@ -73,24 +141,34 @@ export default async function LawyerProfilePage(props: { params: Promise<{ id: s
         </CardContent>
       </Card>
 
-      {/* Reviews */}
       <Card>
-        <CardHeader><CardTitle>Client Reviews</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Client Reviews</CardTitle>
+        </CardHeader>
         <CardContent className="divide-y divide-gray-100">
-          {reviewsList.map((r) => (
-            <div key={r.author} className="py-4 first:pt-0">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-900">{r.author}</p>
-                <span className="text-xs text-gray-400">{r.date}</span>
+          {reviews.length === 0 ? (
+            <div className="py-4 text-sm text-gray-500">No reviews yet.</div>
+          ) : (
+            reviews.map((review) => (
+              <div key={review.id} className="py-4 first:pt-0">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-900">{review.clientName ?? "Client"}</p>
+                  <span className="text-xs text-gray-400">
+                    {new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(new Date(review.createdAt))}
+                  </span>
+                </div>
+                <div className="my-1 flex">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star
+                      key={index}
+                      className={`size-3.5 ${index < review.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600">{review.comment || "No written feedback."}</p>
               </div>
-              <div className="my-1 flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`size-3.5 ${i < r.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
-                ))}
-              </div>
-              <p className="text-sm text-gray-600">{r.comment}</p>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

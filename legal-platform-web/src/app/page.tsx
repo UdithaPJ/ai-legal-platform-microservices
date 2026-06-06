@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Scale, Shield, FileSearch, Video, MessageSquare, Star } from "lucide-react";
+import { login, register, registerAsClient, registerAsLawyer } from "@/actions/auth-actions";
 
 const features = [
   { icon: Shield, title: "Verified Lawyers", desc: "Bar-registered professionals across all specialisations" },
@@ -19,15 +20,19 @@ export default function LandingPage() {
           <span className="text-lg font-semibold">LegalAI</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/auth/signin" className="text-sm text-gray-600 hover:text-gray-900">
-            Sign in
-          </Link>
-          <Link
-            href="/auth/signin"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Get Started
-          </Link>
+          <form action={login}>
+            <button type="submit" className="text-sm text-gray-600 hover:text-gray-900">
+              Sign in
+            </button>
+          </form>
+          <form action={register}>
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Get Started
+            </button>
+          </form>
         </div>
       </nav>
 
@@ -44,18 +49,22 @@ export default function LandingPage() {
           manage your legal matters — all in one secure platform.
         </p>
         <div className="flex justify-center gap-4">
-          <Link
-            href="/client/dashboard"
-            className="rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700"
-          >
-            Find a Lawyer
-          </Link>
-          <Link
-            href="/lawyer/dashboard"
-            className="rounded-lg border border-gray-300 px-6 py-3 text-base font-medium text-gray-700 hover:bg-gray-50"
-          >
-            I&apos;m a Lawyer
-          </Link>
+          <form action={registerAsClient}>
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700"
+            >
+              Find a Lawyer
+            </button>
+          </form>
+          <form action={registerAsLawyer}>
+            <button
+              type="submit"
+              className="rounded-lg border border-gray-300 px-6 py-3 text-base font-medium text-gray-700 hover:bg-gray-50"
+            >
+              I&apos;m a Lawyer
+            </button>
+          </form>
         </div>
       </section>
 

@@ -18,6 +18,12 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
+    // GET /reviews — Admin lists all reviews
+    @GetMapping
+    public ResponseEntity<List<ReviewResponseDTO>> getAllReviews() {
+        return ResponseEntity.ok(reviewService.getAllReviews());
+    }
+
     // POST /reviews — Client submits a review
     @PostMapping
     public ResponseEntity<ReviewResponseDTO> submitReview(
