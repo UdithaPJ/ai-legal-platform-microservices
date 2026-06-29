@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from typing import Annotated
@@ -12,6 +13,8 @@ from app.config import settings
 from app.database import get_db
 from app.models.document import Analysis, Document
 from app.schemas.document import DocumentStatusResponse, DocumentUploadResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analysis/documents", tags=["documents"])
 
@@ -53,10 +56,10 @@ async def _run_analysis(document_id: uuid.UUID) -> None:
             doc.status = "completed"
             await db.commit()
 
-        except Exception:
+        except Exception as exc:
+            logger.exception("Analysis failed for document %s: %s", document_id, exc)
             doc.status = "failed"
             await db.commit()
-            raise
 
 
 @router.post("", response_model=DocumentUploadResponse, status_code=201)
