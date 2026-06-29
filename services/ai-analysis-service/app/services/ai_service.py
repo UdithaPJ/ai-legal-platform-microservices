@@ -44,10 +44,17 @@ Return JSON with exactly this structure:
 {{
   "summary": "A concise paragraph summarising the document",
   "risky_clauses": [
-    {{"clause": "clause text or description", "risk_level": "high", "explanation": "why this is risky"}}
+    {{
+      "clause": "clause text or description",
+      "risk_level": "HIGH",
+      "explanation": "why this clause is risky",
+      "recommendation": "what the party should do or negotiate"
+    }}
   ],
   "simplified_explanation": "Plain English explanation of the key terms and obligations"
-}}"""
+}}
+
+risk_level must be one of: HIGH, MEDIUM, LOW (uppercase)."""
 
     response = _client.chat(
         model=settings.ollama_gen_model,

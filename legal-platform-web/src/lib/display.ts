@@ -98,17 +98,22 @@ export function normalizeRiskyClause(clause: unknown, index: number): RiskyClaus
     };
   }
 
-  const candidate = clause as RiskyClause;
+  const candidate = clause as Record<string, unknown>;
+  const rawLevel = typeof candidate.risk_level === "string"
+    ? (candidate.risk_level.toUpperCase() as RiskyClause["risk_level"])
+    : undefined;
+
   return {
-    clause: candidate.clause ?? `Clause ${index + 1}`,
+    clause: typeof candidate.clause === "string" ? candidate.clause : `Clause ${index + 1}`,
     risk_level:
-      candidate.risk_level === "HIGH" ||
-      candidate.risk_level === "MEDIUM" ||
-      candidate.risk_level === "LOW"
-        ? candidate.risk_level
-        : "MEDIUM",
-    explanation: candidate.explanation ?? "Requires manual legal review.",
+      rawLevel === "HIGH" || rawLevel === "MEDIUM" || rawLevel === "LOW" ? rawLevel : "MEDIUM",
+    explanation:
+      typeof candidate.explanation === "string"
+        ? candidate.explanation
+        : "Requires manual legal review.",
     recommendation:
-      candidate.recommendation ?? "Discuss this clause with a qualified lawyer before signing.",
+      typeof candidate.recommendation === "string"
+        ? candidate.recommendation
+        : "Discuss this clause with a qualified lawyer before signing.",
   };
 }
