@@ -13,7 +13,7 @@ async def ingest(file_path: str, source: str, db: AsyncSession) -> int:
     chunks = chunk_text(text)
 
     for chunk in chunks:
-        vector = embed(chunk)
+        vector = await embed(chunk)
         db.add(KnowledgeChunk(
             id=uuid.uuid4(),
             source=source,

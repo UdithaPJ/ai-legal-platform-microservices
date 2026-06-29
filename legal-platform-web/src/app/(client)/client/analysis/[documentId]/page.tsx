@@ -123,7 +123,9 @@ export default function AnalysisResultPage() {
     );
   }
 
-  if (error || !result) {
+  // Only show the fatal error screen when there is no prior result to fall back to.
+  // Transient poll errors while we already have data are shown as an inline banner instead.
+  if (!result) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <AlertTriangle className="size-12 text-red-400" />
@@ -142,6 +144,11 @@ export default function AnalysisResultPage() {
         <Clock className="size-12 animate-pulse text-blue-400" />
         <p className="mt-4 text-lg font-semibold text-gray-800">Analyzing your document...</p>
         <p className="mt-2 text-sm text-gray-500">This page refreshes automatically while the AI service is running.</p>
+        {error && (
+          <p className="mt-3 rounded-lg bg-amber-50 px-4 py-2 text-xs text-amber-700">
+            Polling error — retrying: {error}
+          </p>
+        )}
       </div>
     );
   }

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.services.retrieval_service import retrieve
 
-_client = ollama.Client(host=settings.ollama_base_url)
+_client = ollama.AsyncClient(host=settings.ollama_base_url)
 
 _RETRIEVAL_QUERIES = [
     "risky clauses legal contract liability indemnification termination penalty",
@@ -56,7 +56,7 @@ Return JSON with exactly this structure:
 
 risk_level must be one of: HIGH, MEDIUM, LOW (uppercase)."""
 
-    response = _client.chat(
+    response = await _client.chat(
         model=settings.ollama_gen_model,
         messages=[{"role": "user", "content": prompt}],
         options={"temperature": 0.1},

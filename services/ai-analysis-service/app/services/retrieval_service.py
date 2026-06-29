@@ -7,7 +7,7 @@ from app.services.embedding_service import embed
 
 
 async def retrieve(query: str, db: AsyncSession) -> list[str]:
-    query_vector = embed(query)
+    query_vector = await embed(query)
     result = await db.execute(
         select(KnowledgeChunk.content)
         .order_by(KnowledgeChunk.embedding.cosine_distance(query_vector))

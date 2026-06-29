@@ -28,6 +28,7 @@ export default function DocumentAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pollError, setPollError] = useState<string | null>(null);
   const pollRef = useRef<number | null>(null);
 
   const hasInFlightDocuments = useMemo(
@@ -37,6 +38,7 @@ export default function DocumentAnalysisPage() {
 
   async function loadDocuments() {
     const data = await apiFetch<DocumentStatusResponse[]>("/analysis/documents");
+    setPollError(null);
     setDocs(
       [...data].sort(
         (left, right) =>
@@ -79,7 +81,9 @@ export default function DocumentAnalysisPage() {
     }
 
     pollRef.current = window.setInterval(() => {
-      loadDocuments().catch(() => undefined);
+      loadDocuments().catch((err) => {
+        setPollError(err instanceof Error ? err.message : "Failed to refresh status.");
+      });
     }, 4000);
 
     return () => {
@@ -167,6 +171,11 @@ export default function DocumentAnalysisPage() {
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {pollError && !error && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          Status refresh failed — retrying: {pollError}
         </div>
       )}
 
