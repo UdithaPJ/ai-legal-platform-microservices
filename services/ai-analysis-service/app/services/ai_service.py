@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.services.retrieval_service import retrieve
 
+_client = ollama.Client(host=settings.ollama_base_url)
+
 _RETRIEVAL_QUERIES = [
     "risky clauses legal contract liability indemnification termination penalty",
     "contract summary key terms parties obligations rights",
@@ -47,7 +49,7 @@ Return JSON with exactly this structure:
   "simplified_explanation": "Plain English explanation of the key terms and obligations"
 }}"""
 
-    response = ollama.chat(
+    response = _client.chat(
         model=settings.ollama_gen_model,
         messages=[{"role": "user", "content": prompt}],
         options={"temperature": 0.1},
