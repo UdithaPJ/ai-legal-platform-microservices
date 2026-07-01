@@ -27,23 +27,18 @@ services:
       CORS_ALLOWED_ORIGINS: https://legal-platform.azurestaticapps.net,https://legalai.bond,https://app.legalai.bond
 
   # ── Cloudflare Tunnel connectors (HA pair) ────────────────────────────────
-  # Two replicas of the same tunnel, same credentials file — Cloudflare's edge
-  # load-balances/fails over across connectors registered under one tunnel ID
-  # automatically, no Cloudflare-side config needed beyond running >1 process.
-  # Both stay on network_mode: host (still the simplest way to reach
-  # api-gateway/keycloak at localhost:8080/8181), so each is given its own
-  # --metrics bind address to avoid the two processes fighting over the same
-  # host-local port; the readiness healthcheck is pointed at the matching port.
+  # Two replicas — Cloudflare load-balances across connectors automatically.
+  # Uses Docker internal networking (container names) so network_mode: host
+  # is not needed, avoiding metrics-port conflicts on restart.
   cloudflared-1:
     build:
       context: ./cloudflare
       dockerfile: Dockerfile
     container_name: cloudflared-1
     restart: unless-stopped
-    command: tunnel --config /home/nonroot/cloudflared-config.yml --metrics localhost:20241 run
-    network_mode: host
+    command: tunnel --config /home/nonroot/cloudflared-config.yml run
     healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "--metrics", "localhost:20241", "ready"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:20241/ready"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -58,10 +53,9 @@ services:
       dockerfile: Dockerfile
     container_name: cloudflared-2
     restart: unless-stopped
-    command: tunnel --config /home/nonroot/cloudflared-config.yml --metrics localhost:20242 run
-    network_mode: host
+    command: tunnel --config /home/nonroot/cloudflared-config.yml run
     healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "--metrics", "localhost:20242", "ready"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:20241/ready"]
       interval: 15s
       timeout: 10s
       retries: 5

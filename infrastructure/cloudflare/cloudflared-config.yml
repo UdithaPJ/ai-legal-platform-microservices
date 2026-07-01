@@ -13,14 +13,14 @@ credentials-file: /home/nonroot/tunnel-credentials.json
 
 ingress:
   - hostname: api.legalai.bond
-    service: http://localhost:8080
+    service: http://api-gateway:8080
     originRequest:
       connectTimeout: 30s
       tcpKeepAlive: 30s
       keepAliveTimeout: 90s
 
   - hostname: auth.legalai.bond
-    service: http://localhost:8181
+    service: http://keycloak:8080
     originRequest:
       connectTimeout: 30s
 

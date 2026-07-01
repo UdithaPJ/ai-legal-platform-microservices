@@ -1,4 +1,4 @@
-# AI Legal Platform — Microservices
+# LegalAI — Microservices
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@
 
 ## Introduction
 
-The **AI Legal Platform** is a distributed, cloud-ready web application that connects clients with legal professionals. It allows clients to discover lawyers, book appointments, exchange documents, hold real-time video consultations, and communicate via a live chat interface — all from a single web application.
+**LegalAI** is a distributed, cloud-ready web application that connects clients with legal professionals. It allows clients to discover lawyers, book appointments, exchange documents, hold real-time video consultations, and communicate via a live chat interface — all from a single web application.
 
 A standout feature is the **AI-powered document analysis engine**, which accepts uploaded legal contracts (PDF and DOCX) and uses a locally-hosted large language model (LLM) to produce a structured analysis: a plain-English summary, a breakdown of risky clauses ranked by severity, and actionable recommendations. This gives clients immediate insight into legal documents without requiring prior legal expertise.
 
