@@ -170,6 +170,25 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
+  # Pulls required Ollama models on first start; exits immediately if they are
+  # already present in the ollama_data volume (subsequent runs are instant).
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: ollama-init
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      /bin/sh -c "
+        ollama pull nomic-embed-text &&
+        ollama pull phi3:mini
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
   minio:
     image: minio/minio:latest
     container_name: minio

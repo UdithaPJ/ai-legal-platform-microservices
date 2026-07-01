@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -14,7 +14,7 @@ import type { UserResponse } from "@/types/user";
 
 type LawyerWithName = LawyerResponseDTO & { fullName: string };
 
-export default function NewDocumentRequestPage() {
+function NewDocumentRequestForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -187,5 +187,13 @@ export default function NewDocumentRequestPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NewDocumentRequestPage() {
+  return (
+    <Suspense>
+      <NewDocumentRequestForm />
+    </Suspense>
   );
 }
