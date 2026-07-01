@@ -37,6 +37,15 @@ services:
     restart: unless-stopped
     command: tunnel --config /home/nonroot/cloudflared-config.yml run
     network_mode: host
+    # `cloudflared tunnel ready` is a built-in readiness probe (checks the
+    # connector has at least one active edge connection) — no shell/curl
+    # needed, works as a plain exec-form healthcheck.
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     depends_on:
       - keycloak
       - api-gateway

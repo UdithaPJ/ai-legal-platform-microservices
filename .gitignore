@@ -16,6 +16,10 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Ignore all Markdown files except README.md
+*.md
+!**/README.md
+
 # ── Secrets — never commit ───────────────────────────────────────────────────
 
 # Cloudflare Tunnel credentials

@@ -31,6 +31,11 @@ x-spring-healthcheck: &spring-healthcheck
   retries: 5
   start_period: 90s
 
+# Applied to every long-running service so a crashed/OOM-killed container comes
+# back on its own instead of staying down until someone runs `docker compose up -d`.
+# Not applied to one-shot jobs (e.g. ollama-init), which already set restart: "no".
+x-restart: &restart-policy unless-stopped
+
 services:
 
   # ════════════════════════════════════════════════════════════════════════════
@@ -40,6 +45,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: postgres
+    restart: *restart-policy
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -59,6 +65,7 @@ services:
       context: ../keycloak-role-assignment-spi
       dockerfile: Dockerfile
     container_name: keycloak
+    restart: *restart-policy
     command:
       - start-dev
       - --import-realm
@@ -101,6 +108,7 @@ services:
   consul:
     image: hashicorp/consul:1.17
     container_name: consul
+    restart: *restart-policy
     ports:
       - "8500:8500"
     command: "agent -dev -client=0.0.0.0"
@@ -113,15 +121,22 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.7.0
     container_name: zookeeper
+    restart: *restart-policy
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc -w 2 localhost 2181 | grep -q Mode || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   kafka:
     image: confluentinc/cp-kafka:7.7.0
     container_name: kafka
+    restart: *restart-policy
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -143,11 +158,12 @@ services:
       retries: 20
     depends_on:
       zookeeper:
-        condition: service_started
+        condition: service_healthy
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    restart: *restart-policy
     ports:
       - "11434:11434"
     volumes:
@@ -192,6 +208,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio
+    restart: *restart-policy
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -217,6 +234,7 @@ services:
       context: ../api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway
+    restart: *restart-policy
     ports:
       - "8080:8080"
     environment:
@@ -236,6 +254,7 @@ services:
       context: ../services/user-service
       dockerfile: Dockerfile
     container_name: user-service
+    restart: *restart-policy
     ports:
       - "8081:8081"
     environment:
@@ -260,6 +279,7 @@ services:
       context: ../services/lawyer-profile-service
       dockerfile: Dockerfile
     container_name: lawyer-service
+    restart: *restart-policy
     ports:
       - "8082:8082"
     environment:
@@ -281,6 +301,7 @@ services:
       context: ../services/appointment-service
       dockerfile: Dockerfile
     container_name: appointment-service
+    restart: *restart-policy
     ports:
       - "8083:8083"
     environment:
@@ -306,6 +327,7 @@ services:
       context: ../services/messaging-service
       dockerfile: Dockerfile
     container_name: messaging-service
+    restart: *restart-policy
     ports:
       - "8084:8084"
     environment:
@@ -329,6 +351,7 @@ services:
       context: ../services/review-rating-service
       dockerfile: Dockerfile
     container_name: review-rating-service
+    restart: *restart-policy
     ports:
       - "8085:8085"
     environment:
@@ -350,6 +373,7 @@ services:
       context: ../services/video-session-service
       dockerfile: Dockerfile
     container_name: video-session-service
+    restart: *restart-policy
     ports:
       - "8086:8086"
     environment:
@@ -375,6 +399,7 @@ services:
       context: ../services/document-service
       dockerfile: Dockerfile
     container_name: document-service
+    restart: *restart-policy
     ports:
       - "8088:8088"
     environment:
@@ -406,6 +431,7 @@ services:
       context: ../services/ai-analysis-service
       dockerfile: Dockerfile
     container_name: ai-analysis-service
+    restart: *restart-policy
     ports:
       - "8087:8087"
     environment:
