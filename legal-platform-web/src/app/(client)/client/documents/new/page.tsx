@@ -10,6 +10,9 @@ import { apiFetch } from "@/lib/api-client";
 import { DOCUMENT_TYPES } from "@/types/document";
 import type { CreateDocumentRequestPayload, DocumentRequestDTO } from "@/types/document";
 import type { LawyerResponseDTO } from "@/types/lawyer";
+import type { UserResponse } from "@/types/user";
+
+type LawyerWithName = LawyerResponseDTO & { fullName: string };
 
 export default function NewDocumentRequestPage() {
   const router = useRouter();
@@ -19,7 +22,7 @@ export default function NewDocumentRequestPage() {
   const prefilledLawyerId = searchParams.get("lawyerId") ?? "";
   const prefilledAppointmentId = searchParams.get("appointmentId") ?? "";
 
-  const [lawyers, setLawyers] = useState<LawyerResponseDTO[]>([]);
+  const [lawyers, setLawyers] = useState<LawyerWithName[]>([]);
   const [lawyerId, setLawyerId] = useState(prefilledLawyerId);
   const [documentType, setDocumentType] = useState("");
   const [description, setDescription] = useState("");
@@ -27,7 +30,24 @@ export default function NewDocumentRequestPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiFetch<LawyerResponseDTO[]>("/lawyers").catch(() => []).then(setLawyers);
+    (async () => {
+      try {
+        const profiles = await apiFetch<LawyerResponseDTO[]>("/lawyers");
+        const withNames = await Promise.all(
+          profiles.map(async (l) => {
+            try {
+              const user = await apiFetch<UserResponse>(`/users/${l.userId}`);
+              return { ...l, fullName: user.fullName };
+            } catch {
+              return { ...l, fullName: String(l.userId) };
+            }
+          })
+        );
+        setLawyers(withNames);
+      } catch {
+        setLawyers([]);
+      }
+    })();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
