@@ -88,8 +88,9 @@ export default function LawyerVideoPage() {
   // ── Mount the Jitsi External API once the user has clicked "Start" ─────────
   useEffect(() => {
     if (!joined || !session || !containerRef.current) return;
+    const session_ = session;
 
-    const meetUrl  = new URL(session.meetingUrl);
+    const meetUrl  = new URL(session_.meetingUrl);
     const domain   = meetUrl.hostname;          // "8x8.vc" for JaaS
     // For JaaS the room name must include the tenant: "<appId>/<room>"
     // The meeting URL path is "/<appId>/<room>" — strip the leading "/".
@@ -102,7 +103,7 @@ export default function LawyerVideoPage() {
       const api = new window.JitsiMeetExternalAPI(domain, {
         roomName,
         // JaaS JWT — moderator=true so the lawyer auto-hosts the meeting.
-        ...(session.jitsiToken ? { jwt: session.jitsiToken } : {}),
+        ...(session_.jitsiToken ? { jwt: session_.jitsiToken } : {}),
         parentNode:   containerRef.current,
         width:        "100%",
         height:       "100%",

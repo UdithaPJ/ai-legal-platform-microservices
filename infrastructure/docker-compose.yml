@@ -158,14 +158,17 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    # GPU support (uncomment if you have an NVIDIA GPU):
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # GPU support: uncomment below if running on a host with an NVIDIA GPU
+    # and the NVIDIA Container Toolkit installed. CPU-only hosts (e.g. Oracle
+    # Cloud Ampere A1) must leave this commented out — Docker will fail to
+    # start the container otherwise.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
   # ════════════════════════════════════════════════════════════════════════════
   # SPRING MICROSERVICES

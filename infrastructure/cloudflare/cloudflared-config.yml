@@ -2,9 +2,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Replace <TUNNEL_ID> with the UUID printed by: cloudflared tunnel create legal-platform
 #
-# Two ingress rules:
+# Ingress rules:
 #   api.legalai.bond   → Spring Cloud Gateway  (localhost:8080)
 #   auth.legalai.bond  → Keycloak               (localhost:8181)
+#   app.legalai.bond is NOT routed here — it's served by Vercel.
 # ─────────────────────────────────────────────────────────────────────────────
 
 tunnel: d70a479a-de7a-4282-874d-bb3f39a574e1
@@ -22,9 +23,9 @@ ingress:
     service: http://localhost:8181
     originRequest:
       connectTimeout: 30s
-  
-  - hostname: app.legalai.bond
-    service: http://host.docker.internal:3000
+
+  # app.legalai.bond is served by Vercel (see Vercel project DNS/domain settings),
+  # not by this tunnel.
 
   # Required catch-all
   - service: http_status:404
