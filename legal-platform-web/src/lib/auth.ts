@@ -175,7 +175,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const keycloakLogoutUrl = buildKeycloakLogoutUrl(
         token.id_token,
         process.env.KEYCLOAK_ISSUER,
-        process.env.NEXTAUTH_URL
+        process.env.AUTH_URL ?? process.env.NEXTAUTH_URL
       );
       return {
         ...session,
