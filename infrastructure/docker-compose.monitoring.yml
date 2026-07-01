@@ -1,0 +1,68 @@
+# Docker Compose OVERLAY for monitoring (Uptime Kuma).
+#
+# Usage — merge with the base file (works standalone or alongside the tunnel overlay):
+#   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.tunnel.yml -f docker-compose.monitoring.yml up -d
+#
+# Uptime Kuma does NOT get the Docker socket mounted in (deliberately — that
+# would let it read every container's env vars, including DB passwords).
+# Monitors are plain HTTP/TCP checks against each service's existing health
+# endpoint instead, added manually in the dashboard after first boot — see
+# the endpoint list at the bottom of this file. No push-notification channel
+# is configured yet; the dashboard at :3001 is the source of truth for now.
+# Kuma supports 90+ notification providers if you want to add one later —
+# that's a dashboard change, not a compose change.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+    # The image ships its own HEALTHCHECK (node extra/healthcheck.js) —
+    # no custom healthcheck block needed here.
+
+volumes:
+  uptime_kuma_data:
+
+# ── Monitors to add manually in the dashboard (http://localhost:3001) ───────
+#
+# Because this overlay shares the default compose network with docker-compose.yml,
+# Kuma can resolve every service below by its Docker service name.
+#
+# HTTP(S) monitors — expect 200:
+#   Spring services:
+#     http://api-gateway:8080/actuator/health
+#     http://user-service:8081/actuator/health
+#     http://lawyer-service:8082/actuator/health
+#     http://appointment-service:8083/actuator/health
+#     http://messaging-service:8084/actuator/health
+#     http://review-rating-service:8085/actuator/health
+#     http://video-session-service:8086/actuator/health
+#     http://document-service:8088/actuator/health
+#   AI analysis service:
+#     http://ai-analysis-service:8087/health
+#   Infra with an HTTP health surface:
+#     http://consul:8500/v1/status/leader
+#     http://minio:9000/minio/health/live
+#     http://keycloak:8080/realms/master
+#     http://postgres-backup:8080/health        (only if item 2's service is running)
+#
+# TCP-port monitors (no HTTP health endpoint of their own):
+#     postgres:5432
+#     kafka:9092
+#     zookeeper:2181
+#     ollama:11434
+#
+# External monitors (once the tunnel overlay is running — validates the
+# cloudflared-1/cloudflared-2 pair end-to-end, not just individual containers):
+#     https://api.legalai.bond
+#     https://auth.legalai.bond
+#     https://app.legalai.bond   (Vercel — outside this stack, still worth watching)
