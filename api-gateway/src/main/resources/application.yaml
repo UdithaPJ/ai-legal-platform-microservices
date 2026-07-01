@@ -81,6 +81,11 @@ spring:
           predicates:
             - Path=/reviews/**
 
+        - id: document-service
+          uri: lb://document-service
+          predicates:
+            - Path=/documents/**
+
         # --- OpenAPI docs passthrough for Swagger UI aggregation ---
         - id: user-service-api-docs
           uri: lb://user-service
@@ -124,6 +129,13 @@ spring:
           filters:
             - RewritePath=/v3/api-docs/review-rating-service, /v3/api-docs
 
+        - id: document-service-api-docs
+          uri: lb://document-service
+          predicates:
+            - Path=/v3/api-docs/document-service
+          filters:
+            - RewritePath=/v3/api-docs/document-service, /v3/api-docs
+
   security:
     oauth2:
       resourceserver:
@@ -150,6 +162,8 @@ springdoc:
         url: /v3/api-docs/video-session-service
       - name: review-rating-service
         url: /v3/api-docs/review-rating-service
+      - name: document-service
+        url: /v3/api-docs/document-service
 
 management:
   endpoints:

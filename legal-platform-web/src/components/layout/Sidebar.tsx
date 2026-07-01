@@ -10,6 +10,7 @@ import {
   CalendarDays,
   MessageSquare,
   FileSearch,
+  FileText,
   Star,
   UserCircle,
   Scale,
@@ -36,6 +37,7 @@ const clientNav = [
   { href: "/client/dashboard",     label: "Dashboard",      icon: LayoutDashboard },
   { href: "/client/lawyers",       label: "Browse Lawyers", icon: Users           },
   { href: "/client/appointments",  label: "Appointments",   icon: CalendarDays    },
+  { href: "/client/documents",     label: "Documents",      icon: FileText        },
   { href: "/client/conversations", label: "Messages",       icon: MessageSquare   },
   { href: "/client/analysis",      label: "Doc Analysis",   icon: FileSearch      },
 ];
@@ -44,6 +46,7 @@ const lawyerNav = [
   { href: "/lawyer/dashboard",     label: "Dashboard",    icon: LayoutDashboard },
   { href: "/lawyer/profile",       label: "My Profile",   icon: UserCircle      },
   { href: "/lawyer/appointments",  label: "Appointments", icon: CalendarDays    },
+  { href: "/lawyer/documents",     label: "Documents",    icon: FileText        },
   { href: "/lawyer/conversations", label: "Messages",     icon: MessageSquare   },
 ];
 
