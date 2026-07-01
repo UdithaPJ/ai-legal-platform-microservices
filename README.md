@@ -595,6 +595,7 @@ npx vercel --prod
 - Add the production Keycloak issuer URL to `keycloak.trusted-issuers` in the API Gateway config.
 - Enable Ollama GPU support if running on a GPU-enabled instance by uncommenting the `deploy.resources` block in `docker-compose.yml`.
 - Use Docker secrets or a cloud secrets manager (AWS Secrets Manager, Azure Key Vault) for database passwords and API keys rather than plain environment variables.
+- Postgres is backed up daily via the `postgres-backup` service in `docker-compose.yml` (`prodrigestivill/postgres-backup-local`), writing gzipped `pg_dump`s per database to `infrastructure/postgres/backups/` with a 7-day/4-week/6-month retention policy. This directory is git-ignored and must never be committed — the dumps contain real user data. For durability beyond a single host, periodically copy this directory to off-host/cloud storage.
 
 ---
 

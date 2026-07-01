@@ -31,6 +31,10 @@ infrastructure/cloudflare/*.json
 infrastructure/jaas/
 infrastructure/.env.jitsi
 
+# Postgres backup dumps — contain real user data (emails, phone numbers,
+# messages, documents metadata), never commit
+infrastructure/postgres/backups/
+
 # Frontend environment files (contain AUTH_SECRET + Keycloak client secret)
 legal-platform-web/.env.tunnel
 legal-platform-web/.env.local
